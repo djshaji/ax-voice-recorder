@@ -24,6 +24,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.acoustixaudio.axvoicerecorder.databinding.ActivityMainBinding;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,11 +34,13 @@ import android.widget.CompoundButton;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Objects;
 import android.Manifest;
 
 public class MainActivity extends AppCompatActivity {
-    public String TAG = getClass().getSimpleName();
+    public static String TAG = getClass().getSimpleName();
     private static final int AUDIO_EFFECT_REQUEST = 0;
     boolean running = false;
     private AppBarConfiguration appBarConfiguration;
@@ -45,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     public static MainActivity mainActivity;
     RecyclerView recyclerView;
     DataAdapter dataAdapter;
+    JSONObject ampModels, availablePlugins, availablePluginsLV2;
 
     static {
         System.loadLibrary("amprack");
@@ -136,6 +141,10 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < 6; i++)
             dataAdapter.addItem(i, i);
 
+        availablePlugins = loadJSONFromAssetFile(this, "all_plugins.json");
+        availablePluginsLV2 = loadJSONFromAssetFile(this, "lv2_plugins.json");
+        ampModels = loadJSONFromAssetFile(this, "amps.json");
+
     }
 
     @Override
@@ -194,6 +203,32 @@ public class MainActivity extends AppCompatActivity {
                 this,
                 new String[]{Manifest.permission.RECORD_AUDIO},
                 AUDIO_EFFECT_REQUEST);
+    }
+
+    static public JSONObject loadJSONFromAssetFile(Context context, String filename) {
+        String json = null;
+        try {
+            InputStream is = context.getAssets().open(filename);
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            Log.e(TAG, "loadJSONFromAsset: unable to parse json " + filename, ex);
+            return null;
+        }
+
+        JSONObject jsonObject = null ;
+        try {
+            jsonObject = new JSONObject(json);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.e(TAG, "loadJSONFromAsset: cannot parse json " + filename, e);
+        }
+
+        return jsonObject;
     }
 
 }
