@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Build;
+import android.util.Log;
 
 public class AudioEngine {
     public static native void loadLibrary (String filename);
@@ -111,6 +112,7 @@ public class AudioEngine {
     }
 
     static void warnLowLatency (Context context) {
+        Log.d("AudioEngine", "warnLowLatency: unable to get low latency");
 //        MainActivity.toast(context.getResources().getString(R.string.lowLatencyWarning));
     }
 

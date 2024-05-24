@@ -81,8 +81,10 @@ public class MainActivity extends AppCompatActivity {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.mute));
+                    AudioEngine.setOutputVolume(1f);
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.preview));
+                    AudioEngine.setOutputVolume(0f);
                 }
             }
         });
@@ -94,8 +96,12 @@ public class MainActivity extends AppCompatActivity {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.play));
+                    AudioEngine.bypass(true);
+                    AudioEngine.setInputVolume(0f);
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.pause));
+                    AudioEngine.bypass(false);
+                    AudioEngine.setInputVolume(1f);
                 }
 
             }
@@ -124,6 +130,8 @@ public class MainActivity extends AppCompatActivity {
         AudioEngine.popFunction(); // this disables the meter output
         AudioEngine.setLibraryPath(getApplicationInfo().nativeLibraryDir);
         AudioEngine.setLazyLoad(true);
+
+        AudioEngine.setOutputVolume(0f);
 
         for (int i = 0; i < 6; i++)
             dataAdapter.addItem(i, i);
