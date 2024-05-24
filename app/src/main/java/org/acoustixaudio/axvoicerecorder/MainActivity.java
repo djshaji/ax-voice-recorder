@@ -1,11 +1,13 @@
 package org.acoustixaudio.axvoicerecorder;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.shajikhan.ladspa.amprack.AudioEngine;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 
+import androidx.core.app.ActivityCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -24,25 +27,33 @@ import org.acoustixaudio.axvoicerecorder.databinding.ActivityMainBinding;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.util.Objects;
+import android.Manifest;
 
 public class MainActivity extends AppCompatActivity {
     public String TAG = getClass().getSimpleName();
+    private static final int AUDIO_EFFECT_REQUEST = 0;
+    boolean running = false;
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    public static Context context ;
-    public static MainActivity mainActivity ;
-    RecyclerView recyclerView ;
+    public static Context context;
+    public static MainActivity mainActivity;
+    RecyclerView recyclerView;
     DataAdapter dataAdapter;
+
+    static {
+        System.loadLibrary("amprack");
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mainActivity = this ;
+        mainActivity = this;
         context = this;
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
@@ -52,11 +63,13 @@ public class MainActivity extends AppCompatActivity {
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                buttonView.setCompoundDrawables(null,null,null,null);
+                buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.stop1));
+                    startEffect();
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.record));
+                    stopEffect();
                 }
             }
         });
@@ -65,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         preview.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                buttonView.setCompoundDrawables(null,null,null,null);
+                buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.mute));
                 } else {
@@ -78,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         pause.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                buttonView.setCompoundDrawables(null,null,null,null);
+                buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.play));
                 } else {
@@ -107,8 +120,14 @@ public class MainActivity extends AppCompatActivity {
         dataAdapter = new DataAdapter(mainActivity);
         recyclerView.setAdapter(dataAdapter);
 
-        for (int i = 0 ; i < 6 ; i++)
-            dataAdapter.addItem(i,i);
+        AudioEngine.create();
+        AudioEngine.popFunction(); // this disables the meter output
+        AudioEngine.setLibraryPath(getApplicationInfo().nativeLibraryDir);
+        AudioEngine.setLazyLoad(true);
+
+        for (int i = 0; i < 6; i++)
+            dataAdapter.addItem(i, i);
+
     }
 
     @Override
@@ -133,7 +152,40 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static void toast (String text) {
+    public static void toast(String text) {
         Toast.makeText(context, text, Toast.LENGTH_LONG).show();
     }
+
+    private void startEffect() {
+        Log.d(TAG, "Attempting to start");
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        if (!isRecordPermissionGranted()) {
+            requestRecordPermission();
+            return;
+        }
+
+        running = AudioEngine.setEffectOn(true);
+    }
+
+    private void stopEffect() {
+        if (!running) return;
+
+        Log.d(TAG, "Playing, attempting to stop, state: " + running);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        running = AudioEngine.setEffectOn(false);
+    }
+
+    private boolean isRecordPermissionGranted() {
+        return (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED);
+    }
+
+    private void requestRecordPermission() {
+        ActivityCompat.requestPermissions(
+                this,
+                new String[]{Manifest.permission.RECORD_AUDIO},
+                AUDIO_EFFECT_REQUEST);
+    }
+
 }
