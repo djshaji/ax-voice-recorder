@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.Switch;
@@ -33,6 +34,13 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
     ArrayList <Integer> plugins = new ArrayList<>();
     ArrayList<ViewHolder> holders = new ArrayList<>();
 
+    public static class ControlDefault {
+        Slider slider ;
+        float def;
+    }
+
+    ArrayList <ControlDefault> controlDefaults = new ArrayList<>() ;
+
     public DataAdapter(MainActivity _mainActivity) {
         context = mainActivity = _mainActivity ;
     }
@@ -57,6 +65,15 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
             return ;
         }
 
+        holder.reset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                for (int i = 0 ; i < controlDefaults.size() ; i ++) {
+                    ControlDefault controlDefault = controlDefaults.get(i);
+                    controlDefault.slider.setValue(controlDefault.def);
+                }
+            }
+        });
         holder.switchMaterial.setUseMaterialThemeColors(true);
         holder.showControls.setChecked(false);
         holder.buttonBox.setOnClickListener(new View.OnClickListener() {
@@ -131,6 +148,11 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                 linearLayout.addView(textView);
 
                 Slider slider = new Slider(mainActivity);
+                ControlDefault controlDefault = new ControlDefault();
+                controlDefault.slider = slider ;
+                controlDefault.def = (float) def;
+                controlDefaults.add(controlDefault);
+
                 try {
                     slider.setValue((float) def);
                     slider.setValueTo((float) max);
@@ -163,6 +185,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
         ArrayList <Slider> sliders ;
         public LinearLayout linearLayout, buttonBox ;
         public LinearLayout root ;
+        public Button reset;
         public TextView pluginName ;
         public SwitchMaterial switchMaterial ;
         public ToggleButton showControls ;
@@ -177,6 +200,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
             pluginName = root.findViewById(R.id.name);
             switchMaterial = root.findViewById(R.id.toggle);
             showControls = root.findViewById(R.id.show_controls);
+            reset = root.findViewById(R.id.reset);
         }
     }
 

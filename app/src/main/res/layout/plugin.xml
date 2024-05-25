@@ -33,8 +33,15 @@
             android:textOff=""
             android:id="@+id/show_controls"
             android:textOn=""
+            android:visibility="gone"
             android:background="@android:color/transparent"
             android:drawableLeft="@drawable/outline_settings_applications_24"/>
+        <Button
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/baseline_sync_24"
+            android:id="@+id/reset"/>
     </LinearLayout>
 
     <LinearLayout
