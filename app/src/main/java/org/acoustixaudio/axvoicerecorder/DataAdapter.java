@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
@@ -23,6 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -51,12 +51,13 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         totalItems++;
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.plugin, parent, false);
-        return new ViewHolder(view);
+        ViewHolder viewHolder = new ViewHolder(view);
+        holders.add(viewHolder);
+        return viewHolder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holders.add(holder);
         LinearLayout linearLayout = holder.linearLayout;
         linearLayout.removeAllViews();
         holder.sliders = new ArrayList<>();
@@ -152,6 +153,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                 controlDefault.slider = slider ;
                 controlDefault.def = (float) def;
                 controlDefaults.add(controlDefault);
+                holder.sliders.add(slider);
 
                 try {
                     slider.setValue((float) def);
@@ -215,4 +217,76 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
         return plugins.get(position);
     }
 
+    public String getPreset () {
+        Log.d(TAG, String.format ("[save preset]: %d plugins", holders.size()));
+        JSONObject jsonObject = new JSONObject();
+        for (int i = 0 ; i < holders.size() ; i ++) {
+            JSONObject object = new JSONObject();
+            ViewHolder viewHolder = holders.get(i);
+
+            for (int j = 0 ; j < viewHolder.sliders.size(); j ++) {
+                try {
+                    object.put(String.valueOf(j), viewHolder.sliders.get(j).getValue());
+                } catch (JSONException e) {
+                    Log.e(TAG, "getPreset: ", e);
+                }
+            }
+
+            try {
+                jsonObject.put(String.valueOf(i), object);
+            } catch (JSONException e) {
+                Log.e(TAG, "getPreset: ", e);
+            }
+        }
+        return jsonObject.toString();
+    }
+
+    void loadPreset (String preset) {
+        Log.d(TAG, String.format ("loading preset: %s", preset));
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(preset);
+            loadPreset(jsonObject);
+        } catch (JSONException e) {
+            Log.e(TAG, "loadPreset: ", e);
+            return;
+        }
+
+    }
+
+    void loadPreset (JSONObject jsonObject) {
+        Log.i(TAG, "loadPreset: loading preset " + jsonObject +
+                "for plugins " + holders.size());
+        Iterator<String> keys = jsonObject.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Log.d(TAG, String.format ("plugin: %s", key));
+            try {
+                JSONObject object = jsonObject.getJSONObject(key);
+                Iterator<String> controls = object.keys();
+
+                while (controls.hasNext()) {
+                    String control = controls.next();
+                    double value = object.getDouble(String.valueOf(control));
+                    Log.d(TAG, String.format ("[control]: %s [%f]", control, value));
+                    holders.get(Integer.parseInt(key)).sliders.get(Integer.parseInt(control)).setValue((float) value);
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "loadPreset: ", e);
+                return;
+            }
+        }
+    }
+
+    String[] getFactoryPresets () {
+        try {
+            Log.d(TAG, "getFactoryPresets: getting list ...");
+            String[] presets = mainActivity.getAssets().list("presets");
+            Log.d(TAG, String.format ("presets: %s", presets));
+            return presets;
+        } catch (IOException e) {
+            Log.e(TAG, "getFactoryPresets: ", e);
+            return null ;
+        }
+    }
 }

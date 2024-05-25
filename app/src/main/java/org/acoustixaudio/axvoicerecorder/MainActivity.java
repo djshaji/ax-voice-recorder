@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.snackbar.Snackbar;
 import com.shajikhan.ladspa.amprack.AudioEngine;
 
@@ -30,7 +31,11 @@ import org.json.JSONObject;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
@@ -39,6 +44,7 @@ import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Objects;
 import android.Manifest;
+import android.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivity";
@@ -49,11 +55,13 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     public static Context context;
     public static MainActivity mainActivity;
+    String [] factoryPresets;
     RecyclerView recyclerView;
     DataAdapter dataAdapter;
     JSONObject ampModels, availablePlugins, availablePluginsLV2;
     static String[] sharedLibraries;
     static String[] sharedLibrariesLV2;
+    Spinner spinner ;
 
     static {
         System.loadLibrary("amprack");
@@ -118,9 +126,17 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.toolbar);
         ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null)
-            actionBar.show();
+        if (actionBar != null) {
+            actionBar.setDisplayShowTitleEnabled(false);
+        }
 
+        Button test = findViewById(R.id.test);
+        test.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, String.format ("[get preset]: %s", dataAdapter.getPreset()));
+            }
+        });
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -134,6 +150,34 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         dataAdapter = new DataAdapter(mainActivity);
         recyclerView.setAdapter(dataAdapter);
+
+        factoryPresets = dataAdapter.getFactoryPresets();
+        Log.d(TAG, String.format ("factory presets: %s", factoryPresets));
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(mainActivity,
+                android.R.layout.simple_spinner_item, factoryPresets);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner = findViewById(R.id.presets);
+        spinner.setAdapter(adapter);
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                int selection = spinner.getSelectedItemPosition();
+                if (selection < factoryPresets.length) {
+                    JSONObject preset = loadJSONFromAssetFile(context, new StringBuffer("presets/").append(factoryPresets [selection]).toString());
+                    Log.d(TAG, String.format("%d: %s", selection, preset));
+                    recyclerView.scrollToPosition(8);
+                    if (preset != null)
+                        dataAdapter.loadPreset(preset);
+                    recyclerView.scrollToPosition(0);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
 
         AudioEngine.create();
         AudioEngine.popFunction(); // this disables the meter output
