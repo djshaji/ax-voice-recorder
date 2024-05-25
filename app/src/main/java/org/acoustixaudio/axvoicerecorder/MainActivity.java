@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivity";
     private static final int AUDIO_EFFECT_REQUEST = 0;
     boolean running = false;
+    JSONObject allPlugins;
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
     public static Context context;
@@ -141,9 +142,6 @@ public class MainActivity extends AppCompatActivity {
 
         AudioEngine.setOutputVolume(0f);
 
-        for (int i = 0; i < 6; i++)
-            dataAdapter.addItem(i, i);
-
         availablePlugins = loadJSONFromAssetFile(this, "all_plugins.json");
         availablePluginsLV2 = loadJSONFromAssetFile(this, "lv2_plugins.json");
         ampModels = loadJSONFromAssetFile(this, "amps.json");
@@ -152,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
         sharedLibrariesLV2 = context.getResources().getStringArray(R.array.lv2_plugins);
 
         AudioEngine.setMainActivityClassName("org/acoustixaudio/axvoicerecorder/MainActivity");
-        addPluginToRack (32400);
+        loadPlugins();
     }
 
     @Override
@@ -252,7 +250,6 @@ public class MainActivity extends AppCompatActivity {
             ret = AudioEngine.addPluginLazy(sharedLibraries[library], plug);
 
         dataAdapter.addItem(pluginID, ret);
-        printPlugins();
     }
 
     void printPlugins () {
@@ -308,4 +305,26 @@ public class MainActivity extends AppCompatActivity {
         return jsonObject.toString();
     }
 
+    public void loadPlugins () {
+        allPlugins = loadJSONFromAssetFile(context, "voice.json");
+        Iterator<String> keys = allPlugins.keys();
+
+        int index = 0;
+        while (keys.hasNext()) {
+            String key = keys.next();
+            try {
+                if (allPlugins.get(key) instanceof JSONObject) {
+                    JSONObject object = allPlugins.getJSONObject(key);
+                    String name = object.getString("name");
+                    addPluginToRack (Integer.parseInt(key));
+
+                    AudioEngine.togglePlugin(index, false);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            index ++ ;
+        }
+    }
 }

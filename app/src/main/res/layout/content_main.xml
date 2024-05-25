@@ -28,6 +28,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/l2"
+        app:layout_constraintBottom_toTopOf="@id/l3"
         app:layout_constraintTop_toBottomOf="@id/l1"
         app:layout_constraintLeft_toLeftOf="parent"
         android:orientation="horizontal">
@@ -53,22 +54,46 @@
             android:drawableLeft="@drawable/pause"/>
 
     </LinearLayout>
-    <ScrollView
-        android:background="@drawable/rounded_corners_transparent"
+    <LinearLayout
+        app:layout_constraintTop_toBottomOf="@id/l2"
+        app:layout_constraintBottom_toTopOf="@id/recycler"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
+        android:id="@+id/l3"
         android:padding="10dp"
-        android:paddingLeft="15dp"
-        app:layout_constraintTop_toBottomOf="@id/l2"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:id="@+id/sw1">
+        android:layout_margin="15dp"
+        android:background="@drawable/rounded_corners_transparent"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Presets"/>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/recycler"/>
-    </ScrollView>
+        <Spinner
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/presets"/>
+        <Button
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="5dp"
+            android:background="@drawable/baseline_add_circle_outline_24"
+            android:id="@+id/add_preset"/>
+        <Button
+            android:layout_width="30dp"
+            android:id="@+id/delete_preset"
+            android:layout_height="30dp"
+            android:layout_margin="5dp"
+            android:background="@drawable/baseline_delete_forever_24"/>
+    </LinearLayout>
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
+        app:layout_constraintTop_toBottomOf="@id/l3"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_height="wrap_content"
+        app:layout_constrainedHeight="true"
+        android:layout_margin="10dp"
+        android:id="@+id/recycler"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
