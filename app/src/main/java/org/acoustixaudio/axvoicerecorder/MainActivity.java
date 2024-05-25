@@ -36,11 +36,12 @@ import android.widget.ToggleButton;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.Objects;
 import android.Manifest;
 
 public class MainActivity extends AppCompatActivity {
-    public static String TAG = getClass().getSimpleName();
+    public static String TAG = "MainActivity";
     private static final int AUDIO_EFFECT_REQUEST = 0;
     boolean running = false;
     private AppBarConfiguration appBarConfiguration;
@@ -50,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     DataAdapter dataAdapter;
     JSONObject ampModels, availablePlugins, availablePluginsLV2;
+    static String[] sharedLibraries;
+    static String[] sharedLibrariesLV2;
 
     static {
         System.loadLibrary("amprack");
@@ -145,6 +148,11 @@ public class MainActivity extends AppCompatActivity {
         availablePluginsLV2 = loadJSONFromAssetFile(this, "lv2_plugins.json");
         ampModels = loadJSONFromAssetFile(this, "amps.json");
 
+        sharedLibraries = context.getResources().getStringArray(R.array.ladspa_plugins);
+        sharedLibrariesLV2 = context.getResources().getStringArray(R.array.lv2_plugins);
+
+        AudioEngine.setMainActivityClassName("org/acoustixaudio/axvoicerecorder/MainActivity");
+        addPluginToRack (32400);
     }
 
     @Override
@@ -229,6 +237,75 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return jsonObject;
+    }
+
+    public void addPluginToRack(int pluginID) {
+        int library = pluginID / 100;
+        int plug = pluginID - (library * 100);
+        Log.d(TAG, "addPluginToRack: loading from " + sharedLibraries.length + " LADSPA and " + sharedLibrariesLV2.length + " LV2 plugins");
+        Log.d(TAG, "Adding plugin: " + library + ": " + plug);
+        int ret = -1;
+
+        if (library > 149 /* because we have 149 lADSPA libraries */) {
+            ret = AudioEngine.addPluginLazyLV2(sharedLibrariesLV2[library - sharedLibraries.length], plug);
+        } else
+            ret = AudioEngine.addPluginLazy(sharedLibraries[library], plug);
+
+        dataAdapter.addItem(pluginID, ret);
+        printPlugins();
+    }
+
+    void printPlugins () {
+        JSONObject plugins = mainActivity.availablePluginsLV2 ;
+        Iterator<String> keys = plugins.keys();
+
+        while (keys.hasNext()) {
+            String key = keys.next();
+            try {
+
+                if (plugins.get(key) instanceof JSONObject) {
+                    JSONObject object = plugins.getJSONObject(key);
+                    String name = object.getString("name");
+                    String id = object.getString("id");
+                    Log.d(TAG, String.format ("[LV2 plugin] %s: %s", id, name));
+//                    mainActivity.pluginDialogAdapter.addItem(Integer.parseInt(key), name, Integer.parseInt(id));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        plugins = mainActivity.availablePlugins ;
+        keys = plugins.keys();
+
+        while (keys.hasNext()) {
+            String key = keys.next();
+            try {
+                if (plugins.get(key) instanceof JSONObject) {
+                    JSONObject object = plugins.getJSONObject(key);
+                    String name = object.getString("name");
+                    String id = object.getString("id");
+                    Log.d(TAG, "[LADSPA plugin]: " + name + ": " + id);
+//                    mainActivity.pluginDialogAdapter.addItem(Integer.parseInt(key), name, Integer.parseInt(id));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static String getLV2Info (String libraryName, String plugin) {
+        String pluginName ;
+        if (plugin.indexOf("#") != -1)
+            pluginName = plugin.split("#")[1];
+        else {
+            String [] p = plugin.split("/");
+            pluginName = p [p.length -1];
+        }
+
+        Log.d(TAG, "getLV2Info: lv2/" + libraryName + "/" + pluginName + ".json");
+        JSONObject jsonObject = loadJSONFromAssetFile(context, "lv2/" + libraryName + "/" + pluginName + ".json");
+        return jsonObject.toString();
     }
 
 }

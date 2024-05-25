@@ -34,7 +34,6 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        Log.d(TAG, "onCreateViewHolder: " + totalItems);
         totalItems++;
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.plugin, parent, false);
         return new ViewHolder(view);
@@ -42,7 +41,6 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Log.d(TAG, "onBindViewHolder: " + position);
         holders.add(holder);
         LinearLayout linearLayout = holder.linearLayout;
         linearLayout.removeAllViews();
@@ -81,7 +79,6 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
     }
 
     void addItem(int pluginID, int index) {
-        Log.d(TAG, String.format ("adding item: %d", pluginID));
         plugins.add(pluginID);
         notifyItemInserted(index);
     }
