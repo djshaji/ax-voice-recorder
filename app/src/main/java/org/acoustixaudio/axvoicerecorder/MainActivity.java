@@ -1,8 +1,12 @@
 package org.acoustixaudio.axvoicerecorder;
 
+import static android.os.Environment.DIRECTORY_DOCUMENTS;
 import static android.os.Environment.DIRECTORY_RECORDINGS;
+import static android.os.Environment.getExternalStorageDirectory;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -17,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Environment;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.core.app.ActivityCompat;
@@ -38,14 +43,23 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Objects;
@@ -60,17 +74,20 @@ public class MainActivity extends AppCompatActivity {
     boolean running = false;
     String dir, filename ;
     JSONObject allPlugins;
+    ArrayList<String> presetsForAdapter ;
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
     public static Context context;
     public static MainActivity mainActivity;
     String [] factoryPresets;
+    String presetsDir ;
     RecyclerView recyclerView;
     DataAdapter dataAdapter;
     JSONObject ampModels, availablePlugins, availablePluginsLV2;
     static String[] sharedLibraries;
     static String[] sharedLibrariesLV2;
     Spinner spinner ;
+    ArrayAdapter<String> adapter ;
 
     static {
         System.loadLibrary("amprack");
@@ -98,6 +115,16 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, String.format ("folder exists: %s", folder.getAbsolutePath()));
         }
 
+        presetsDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).getPath();
+        File pD = getExternalFilesDir(DIRECTORY_DOCUMENTS);
+        if (! pD.exists()) {
+            if (!pD.mkdirs()) {
+                Toast.makeText(context, "cannot create preset folder", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Log.d(TAG, String.format ("[preset dir]: %s", presetsDir));
+        }
+
         Log.d(TAG, String.format ("[dir]: %s", dir));
         ToggleButton record = findViewById(R.id.record);
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -122,6 +149,22 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        Button deletePreset = findViewById(R.id.delete_preset);
+        deletePreset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setTitle("Delete this preset?").setMessage(spinner.getSelectedItem().toString());
+                builder.setPositiveButton("Delete preset", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        deleteUserPreset();
+                    }
+                });
+
+                builder.setNegativeButton("Cancel", null);
+                builder.show();
+            }
+        });
         ToggleButton preview = findViewById(R.id.preview);
         preview.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -184,11 +227,27 @@ public class MainActivity extends AppCompatActivity {
 
         factoryPresets = dataAdapter.getFactoryPresets();
         Log.d(TAG, String.format ("factory presets: %s", factoryPresets));
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(mainActivity,
-                android.R.layout.simple_spinner_item, factoryPresets);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        presetsForAdapter = new ArrayList<>(Arrays.asList(factoryPresets));
+        File [] userPresets = getExternalFilesDir(DIRECTORY_DOCUMENTS).listFiles();
+        Log.d(TAG, String.format ("[user presets]: %d", userPresets.length));
+        for (File file: userPresets) {
+            presetsForAdapter.add(file.getName());
+        }
+
         spinner = findViewById(R.id.presets);
+        adapter = new ArrayAdapter<String>(mainActivity,
+                android.R.layout.simple_spinner_item, presetsForAdapter);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+
+        Button addPreset = findViewById(R.id.add_preset);
+        addPreset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveUserPreset();
+            }
+        });
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -201,6 +260,14 @@ public class MainActivity extends AppCompatActivity {
                     if (preset != null)
                         dataAdapter.loadPreset(preset);
                     recyclerView.scrollToPosition(0);
+                } else {
+                    try {
+                        String preset = Files.readAllLines (Paths.get (new StringJoiner ("/").add(getExternalFilesDir(DIRECTORY_DOCUMENTS).getPath()).add((CharSequence) spinner.getAdapter().getItem(selection)).toString())).get(0).toString();
+                        Log.d(TAG, String.format ("[user preset] %d: %s", selection, preset));
+                        dataAdapter.loadPreset(preset);
+                    } catch (IOException e) {
+                        Log.e(TAG, "onItemSelected: ", e);
+                    }
                 }
             }
 
@@ -401,5 +468,88 @@ public class MainActivity extends AppCompatActivity {
 
             index ++ ;
         }
+    }
+
+    public void saveUserPreset () {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        LinearLayout linearLayout = (LinearLayout) inflater.inflate(R.layout.get_filename, null);
+        TextView textView = linearLayout.findViewById(R.id.filename);
+        builder.setView(linearLayout)
+               .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                   @Override
+                   public void onClick(DialogInterface dialog, int id) {
+                       CharSequence filename = textView.getText() ;
+                       if (filename.equals("") || filename == null)
+                           return;
+
+                       String preset = dataAdapter.getPreset();
+                       String fullFilename = new StringJoiner ("/").add(presetsDir).add(filename).toString();
+                       Log.d(TAG, String.format ("write preset: %s", fullFilename));
+                       File file = new File(dir, String.valueOf(fullFilename));
+                       FileWriter writer = null;
+                       if (! Objects.requireNonNull(getExternalFilesDir(DIRECTORY_DOCUMENTS)).exists())
+                           Log.e(TAG, "onClick: presets directory does not exist!" );
+                       if (writeFile(fullFilename, preset)) {
+                           Toast.makeText(MainActivity.this, "Saved preset to file: " + filename, Toast.LENGTH_SHORT).show();
+                           addToSpinner(String.valueOf(filename));
+                       }
+                   }
+               })
+               .setNegativeButton("Cancel", null);
+
+        builder.show();
+    }
+
+    public boolean writeFile (String filename, String preset) {
+        File myFile = new File(filename);
+
+        try {
+            myFile.createNewFile();
+            FileOutputStream fOut = new FileOutputStream(myFile);
+            OutputStreamWriter myOSW = new OutputStreamWriter(fOut);
+            myOSW.append(preset);
+            myOSW.close();
+            fOut.close();
+            return true;
+        } catch (IOException e) {
+            Log.e(TAG, "writeFile: ", e);
+            Toast.makeText(this, "cannot create preset " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            return false;
+        }
+    }
+
+    public void addToSpinner (String name) {
+        presetsForAdapter.add(name);
+        adapter = new ArrayAdapter<String>(mainActivity,
+                android.R.layout.simple_spinner_item, presetsForAdapter);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+
+        spinner.setSelection(adapter.getCount() - 1);
+    }
+
+    public void deleteUserPreset () {
+        if (spinner.getSelectedItemPosition() < factoryPresets.length) {
+            Toast.makeText(context, "Factory preset cannot be deleted", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String preset = spinner.getSelectedItem().toString();
+        File file = new File(new StringJoiner("/").add (getExternalFilesDir(DIRECTORY_DOCUMENTS).getPath()).add("/").add (preset).toString());
+        Log.d(TAG, String.format ("[delete]: %s", file.getAbsolutePath()));
+        if (!file.delete())
+            Toast.makeText(context, "Cannot delete preset: " + preset, Toast.LENGTH_SHORT).show();
+        else {
+            Toast.makeText(context, "Preset deleted", Toast.LENGTH_SHORT).show();
+            presetsForAdapter.remove(preset);
+            adapter = new ArrayAdapter<String>(mainActivity,
+                    android.R.layout.simple_spinner_item, presetsForAdapter);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinner.setAdapter(adapter);
+
+            spinner.setSelection(0);
+        }
+
     }
 }
