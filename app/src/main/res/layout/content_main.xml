@@ -78,7 +78,7 @@
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_margin="5dp"
-            android:background="@drawable/baseline_add_circle_outline_24"
+            android:background="@drawable/baseline_save_24"
             android:id="@+id/add_preset"/>
         <Button
             android:layout_width="30dp"

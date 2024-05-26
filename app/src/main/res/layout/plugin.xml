@@ -29,13 +29,12 @@
             android:layout_height="wrap_content"/>
         <ToggleButton
             android:layout_width="30dp"
-            android:layout_height="wrap_content"
+            android:layout_height="30dp"
             android:textOff=""
             android:id="@+id/show_controls"
             android:textOn=""
-            android:visibility="gone"
-            android:background="@android:color/transparent"
-            android:drawableLeft="@drawable/outline_settings_applications_24"/>
+            android:visibility="visible"
+            android:background="@drawable/outline_settings_applications_24"/>
         <Button
             android:layout_width="30dp"
             android:layout_height="30dp"

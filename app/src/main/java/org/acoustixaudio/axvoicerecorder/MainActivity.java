@@ -1,5 +1,7 @@
 package org.acoustixaudio.axvoicerecorder;
 
+import static android.os.Environment.DIRECTORY_RECORDINGS;
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
@@ -13,6 +15,7 @@ import com.shajikhan.ladspa.amprack.AudioEngine;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 
@@ -39,10 +42,15 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.StringJoiner;
+
 import android.Manifest;
 import android.widget.Toolbar;
 
@@ -50,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivity";
     private static final int AUDIO_EFFECT_REQUEST = 0;
     boolean running = false;
+    String dir, filename ;
     JSONObject allPlugins;
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
@@ -76,6 +85,20 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        AudioEngine.setExportFormat(2);
+        dir = getExternalFilesDir("Recordings").getPath();
+        File folder = getExternalFilesDir(DIRECTORY_RECORDINGS);
+        if (! folder.exists()) {
+            if (!folder.mkdirs()) {
+                Toast.makeText(context, "Unable to create recording files directory", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.d(TAG, String.format("created folder: %s", folder.getAbsolutePath()));
+            }
+        } else {
+            Log.d(TAG, String.format ("folder exists: %s", folder.getAbsolutePath()));
+        }
+
+        Log.d(TAG, String.format ("[dir]: %s", dir));
         ToggleButton record = findViewById(R.id.record);
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -83,7 +106,15 @@ public class MainActivity extends AppCompatActivity {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.stop1));
+
+                    SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy_HH.mm.ss");
+                    Date date = new Date();
+                    filename = new StringJoiner("/").add (dir).add (formatter.format(date)).toString() + ".mp3";
+                    AudioEngine.setFileName(filename);
+                    Log.d(TAG, String.format ("[filename]: %s", filename));
+
                     startEffect();
+                    AudioEngine.toggleRecording(true);
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.record));
                     stopEffect();
