@@ -6,12 +6,42 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
     <LinearLayout
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        android:id="@+id/last_recorded_box">
+        <ToggleButton
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:textOn=""
+            android:textOff=""
+            android:background="@drawable/baseline_play_arrow_24"
+            android:id="@+id/last_play"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/last_filename"/>
+        <Button
+            android:layout_gravity="end"
+            android:gravity="end"
+            android:layout_margin="5dp"
+            android:padding="5dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:id="@+id/share_last"
+            android:background="@drawable/baseline_share_24"/>
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
         android:id="@+id/l1"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/last_recorded_box"
         app:layout_constraintLeft_toLeftOf="parent">
         <ToggleButton
             android:layout_width="wrap_content"

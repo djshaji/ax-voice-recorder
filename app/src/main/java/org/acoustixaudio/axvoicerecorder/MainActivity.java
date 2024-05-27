@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -76,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivity";
     private static final int AUDIO_EFFECT_REQUEST = 0;
     boolean running = false;
+    MediaPlayer mediaPlayer ;
     String dir, filename ;
     JSONObject allPlugins;
     ArrayList<String> presetsForAdapter ;
@@ -103,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
         mainActivity = this;
         context = this;
 
+        mediaPlayer = new MediaPlayer(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -131,6 +134,56 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, String.format ("[dir]: %s", dir));
         ToggleButton record = findViewById(R.id.record);
+        TextView lastFilename = findViewById(R.id.last_filename);
+        ToggleButton lastPlayPause = findViewById(R.id.last_play);
+
+        lastFilename.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                lastPlayPause.performClick();
+            }
+        });
+
+        Button lastShare = findViewById(R.id.share_last);
+
+        lastShare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (filename != null)
+                    shareFile(new File(filename));
+            }
+        });
+        lastPlayPause.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    if (filename != null) {
+                        try {
+                            mediaPlayer.setDataSource(filename + ".mp3");
+                            mediaPlayer.prepare();
+                        } catch (IOException e) {
+                            Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "onCheckedChanged: ", e);
+                            return;
+                        }
+
+                        mediaPlayer.start();
+                        buttonView.setBackground(getResources().getDrawable(R.drawable.baseline_pause_24));
+                    }
+                } else {
+                    mediaPlayer.stop();
+                    buttonView.setBackground(getResources().getDrawable(R.drawable.baseline_play_arrow_24));
+                }
+            }
+        });
+
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                lastPlayPause.setBackground(getDrawable(R.drawable.baseline_play_arrow_24));
+            }
+        });
+
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -149,6 +202,15 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.record));
                     stopEffect();
+
+                    lastFilename.setText(new File (filename).getName());
+                    try {
+                        mediaPlayer.setDataSource(filename + ".mp3");
+                        mediaPlayer.prepare();
+                    } catch (IOException e) {
+                        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "onCheckedChanged: ", e);
+                    }
                 }
             }
         });
