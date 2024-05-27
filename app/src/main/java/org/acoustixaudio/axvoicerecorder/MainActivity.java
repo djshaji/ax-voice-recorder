@@ -7,9 +7,11 @@ import static android.os.Environment.getExternalStorageDirectory;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 
 import com.google.android.material.appbar.MaterialToolbar;
@@ -20,11 +22,13 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -136,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
 
                     SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy_HH.mm.ss");
                     Date date = new Date();
-                    filename = new StringJoiner("/").add (dir).add (formatter.format(date)).toString() + ".mp3";
+                    filename = new StringJoiner("/").add (dir).add (formatter.format(date)).toString();
                     AudioEngine.setFileName(filename);
                     Log.d(TAG, String.format ("[filename]: %s", filename));
 
@@ -211,6 +215,16 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, String.format ("[get preset]: %s", dataAdapter.getPreset()));
             }
         });
+
+        Button recordings = findViewById(R.id.recordings);
+        recordings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(context, Recordings.class);
+                startActivity(intent);
+            }
+        });
+
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -281,6 +295,7 @@ public class MainActivity extends AppCompatActivity {
         AudioEngine.popFunction(); // this disables the meter output
         AudioEngine.setLibraryPath(getApplicationInfo().nativeLibraryDir);
         AudioEngine.setLazyLoad(true);
+        AudioEngine.pushToLockFreeBeforeOutputVolumeAaaaaargh(true);
 
         AudioEngine.setOutputVolume(0f);
 
@@ -552,4 +567,28 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+    public static void shareFile(File file) {
+        Intent intentShareFile = new Intent(Intent.ACTION_SEND);
+        Uri contentUri = null;
+        try {
+            contentUri = FileProvider.getUriForFile(context, "org.acoustixaudio.axvoicerecorder.fileprovider", file);
+        } catch (IllegalArgumentException illegalArgumentException) {
+            Log.e(TAG, "shareFile: ", illegalArgumentException);
+            Toast.makeText(context, illegalArgumentException.getMessage(), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        intentShareFile.setType("audio/*");
+        intentShareFile.putExtra(Intent.EXTRA_STREAM, contentUri);
+
+        intentShareFile.putExtra(Intent.EXTRA_SUBJECT,
+                "Sharing Audio File...");
+        intentShareFile.putExtra(Intent.EXTRA_TEXT, context.getResources().getString(R.string.app_name) + " recorded audio ...");
+
+        intentShareFile.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        context.startActivity(Intent.createChooser(intentShareFile, "Share Audio File"));
+
+    }
+
 }

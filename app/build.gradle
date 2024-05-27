@@ -48,12 +48,14 @@ android {
 
 dependencies {
     implementation 'com.google.oboe:oboe:1.8.1'
+    implementation 'com.google.android.exoplayer:exoplayer-core:2.19.1'
 
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout
     implementation libs.navigation.fragment
     implementation libs.navigation.ui
+    implementation libs.activity
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

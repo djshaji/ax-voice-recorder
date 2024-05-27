@@ -27,6 +27,12 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"/>
             <Button
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="end"
+                android:background="@drawable/baseline_library_music_24"
+                android:id="@+id/recordings"/>
+            <Button
                 android:layout_gravity="end"
                 android:layout_width="30dp"
                 android:layout_height="30dp"

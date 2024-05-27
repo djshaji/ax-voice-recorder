@@ -15,6 +15,6 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/baseline_terminal_24"
+        android:background="@drawable/baseline_library_music_24"
         android:id="@+id/test"/>
 </LinearLayout>

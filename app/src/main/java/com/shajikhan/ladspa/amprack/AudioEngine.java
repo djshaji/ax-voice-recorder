@@ -121,4 +121,5 @@ public class AudioEngine {
     public static native long getTimeStamp () ;
     public static native double getLatency (boolean input) ;
     public static native void setMainActivityClassName (String className);
+    public static native void pushToLockFreeBeforeOutputVolumeAaaaaargh (boolean setting) ;
 }
