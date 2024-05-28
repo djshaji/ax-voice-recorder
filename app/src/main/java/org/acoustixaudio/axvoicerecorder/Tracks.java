@@ -62,10 +62,6 @@ public class Tracks extends Fragment {
         tracksAdapter = new TracksAdapter();
     }
 
-    public void setMainActivity(MainActivity mainActivity) {
-        this.tracksAdapter.mainActivity = mainActivity;
-    }
-
     public Tracks (MainActivity activity) {
         tracksAdapter = new TracksAdapter();
     }

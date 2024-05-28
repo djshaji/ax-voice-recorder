@@ -1,5 +1,7 @@
 package org.acoustixaudio.axvoicerecorder;
 
+import static android.os.Environment.DIRECTORY_DOCUMENTS;
+
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -7,12 +9,20 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
@@ -22,13 +32,16 @@ import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.Objects;
+import java.util.StringJoiner;
 
 public class TracksAdapter extends RecyclerView.Adapter<TracksAdapter.ViewHolder> {
     String TAG = this.getClass().getSimpleName();
     Context context = null ;
     ArrayList<String> filenames = new ArrayList<>();
-    MainActivity mainActivity = null;
+    Recordings mainActivity = null;
     ArrayList <ViewHolder> holders = new ArrayList<>();
     public ExoPlayer player ;
     Tracks tracks ;
@@ -77,7 +90,24 @@ public class TracksAdapter extends RecyclerView.Adapter<TracksAdapter.ViewHolder
                 @Override
                 public boolean onLongClick(View view) {
                     // brilliant
-                    MainActivity.shareFile(new File (name));
+//                    MainActivity.shareFile(new File (name));
+                    PopupMenu popupMenu = new PopupMenu(context, holder.fileButton);
+                    popupMenu.inflate(R.menu.menu);
+                    popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            int id = item.getItemId();
+                            if (id == R.id.share)
+                                MainActivity.shareFile(new File(name));
+                            else if (id == R.id.delete)
+                                holder.deleteButton.performClick();
+                            else
+                                renameFile(basename, position);
+
+                            return false;
+                        }
+                    });
+                    popupMenu.show();
                     return true;
                 }
             });
@@ -142,4 +172,30 @@ public class TracksAdapter extends RecyclerView.Adapter<TracksAdapter.ViewHolder
         notifyItemRemoved(index);
     }
 
+    public void renameFile (String oldName, int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        LayoutInflater inflater = mainActivity.getLayoutInflater();
+        LinearLayout linearLayout = (LinearLayout) inflater.inflate(R.layout.get_filename, null);
+        EditText textView = linearLayout.findViewById(R.id.filename);
+        TextView title = linearLayout.findViewById(R.id.preset_name);
+        title.setText("Enter filename");
+        textView.setText(oldName);
+
+        builder.setView(linearLayout)
+                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+                        CharSequence filename = textView.getText() ;
+                        if (filename.equals("") || filename == null || filename.equals(oldName))
+                            return;
+
+                        File file = new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS).getAbsolutePath()).add (oldName).toString());
+                        file.renameTo(new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS).getAbsolutePath()).add (filename).toString()));
+                        holders.get(position).fileButton.setText(filename);
+                    }
+                })
+                .setNegativeButton("Cancel", null);
+
+        builder.show();
+    }
 }

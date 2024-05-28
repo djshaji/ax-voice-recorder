@@ -33,6 +33,7 @@ public class Recordings extends AppCompatActivity {
         parent.addView(tracks.constraintLayout);
 
         tracks.context = this ;
+        tracks.tracksAdapter.mainActivity = this;
         tracks.onViewCreated(tracks.constraintLayout, null);
 //        populateRecordings();
         tracks.load(Objects.requireNonNull(getExternalFilesDir(Environment.DIRECTORY_RECORDINGS)));
@@ -42,5 +43,17 @@ public class Recordings extends AppCompatActivity {
         for (File f: Objects.requireNonNull(getExternalFilesDirs("Recordings")[0].listFiles())) {
             tracks.tracksAdapter.add(f.getName());
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        tracks.player.stop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        tracks.player.stop();
     }
 }

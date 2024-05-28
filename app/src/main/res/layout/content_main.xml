@@ -7,10 +7,14 @@
 
     <LinearLayout
         app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_width="match_parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_width="wrap_content"
+        android:padding="5dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
+        android:visibility="gone"
+        android:background="@drawable/semi_trans"
         app:layout_constraintTop_toTopOf="parent"
         android:id="@+id/last_recorded_box">
         <ToggleButton
@@ -25,9 +29,15 @@
             android:layout_height="wrap_content"
             android:id="@+id/last_filename"/>
         <Button
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/baseline_mode_edit_24"
+            android:layout_gravity="end"
+            android:id="@+id/last_edit"/>
+        <Button
             android:layout_gravity="end"
             android:gravity="end"
-            android:layout_margin="5dp"
+            android:layout_margin="0dp"
             android:padding="5dp"
             android:layout_width="30dp"
             android:layout_height="30dp"
