@@ -17,6 +17,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.android.billingclient.api.AcknowledgePurchaseParams;
+import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
+import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.BillingResult;
+import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchasesResponseListener;
+import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
@@ -25,6 +32,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.shajikhan.ladspa.amprack.AudioEngine;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -75,6 +83,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -92,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
     LinearLayout lastRecordedBox;
+    boolean proVersion = false ;
     public static Context context;
     public static MainActivity mainActivity;
     TextView lastFilename;
@@ -105,10 +115,16 @@ public class MainActivity extends AppCompatActivity {
     Spinner spinner ;
     ArrayAdapter<String> adapter ;
     static boolean prepared = false ;
+    static SharedPreferences defaultSharedPreferences ;
 
     static {
         System.loadLibrary("amprack");
     }
+
+    private AcknowledgePurchaseResponseListener acknowledgePurchaseResponseListener;
+    private PurchasesResponseListener purchasesResponseListener;
+    private PurchasesUpdatedListener purchasesUpdatedListener;
+    private BillingClient billingClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,6 +135,76 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer = new ExoPlayer.Builder(context).build();
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        try {
+            proVersion = defaultSharedPreferences.getBoolean("pro", false);
+        } catch (ClassCastException e) {
+            Log.e(TAG, "onCreate: incorrect preference found!", e);
+            proVersion = false;
+            defaultSharedPreferences.edit().putBoolean("pro", false).apply();
+        }
+
+        Log.d(TAG, "onCreate: purchased proVersion: " + proVersion);
+
+        if (!proVersion) {
+            acknowledgePurchaseResponseListener = new AcknowledgePurchaseResponseListener() {
+                @Override
+                public void onAcknowledgePurchaseResponse(@NonNull BillingResult billingResult) {
+                    Log.d(TAG, "onAcknowledgePurchaseResponse: " + billingResult.getDebugMessage());
+                }
+            };
+
+            purchasesResponseListener = new PurchasesResponseListener() {
+                @Override
+                public void onQueryPurchasesResponse(@NonNull BillingResult billingResult, @NonNull List<Purchase> list) {
+                    Log.d(TAG, "onQueryPurchasesResponse: " + billingResult.getDebugMessage());
+                    if (list.isEmpty()) {
+                        Log.d(TAG, "onQueryPurchasesResponse: no purchases");
+                        Log.d(TAG, "onQueryPurchasesResponse: not PRO version");
+
+                        defaultSharedPreferences.edit().putBoolean("pro", false).apply();
+                        return;
+                    }
+
+                    Purchase purchase = list.get(0);
+                    if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                        Log.d(TAG, "onQueryPurchasesResponse: purchased");
+                        proVersion = true;
+                        defaultSharedPreferences.edit().putBoolean("pro", true).apply();
+                    } else {
+                        Log.d(TAG, "onQueryPurchasesResponse: not PRO version");
+                        defaultSharedPreferences.edit().putBoolean("pro", false).apply();
+                    }
+                }
+            };
+
+            purchasesUpdatedListener = new PurchasesUpdatedListener() {
+
+                @Override
+                public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<com.android.billingclient.api.Purchase> list) {
+                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK
+                            && list != null) {
+                        for (com.android.billingclient.api.Purchase purchase : list) {
+                            handlePurchase(purchase);
+                        }
+                    } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
+                        // Handle an error caused by a user cancelling the purchase flow.
+                        Log.d(TAG, "onPurchasesUpdated: user cancelled purchase");
+                    } else {
+                        // Handle any other error codes.
+                        Log.d(TAG, "onPurchasesUpdated: got purchase response " + billingResult.getDebugMessage());
+                    }
+
+                }
+            };
+
+            billingClient = BillingClient.newBuilder(context)
+                    .enablePendingPurchases()
+                    .setListener(purchasesUpdatedListener)
+                    .build();
+        }
 
         AudioEngine.setExportFormat(2);
         dir = getExternalFilesDir("Recordings").getPath();
@@ -405,6 +491,9 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             startActivity(new Intent(context, SettingsActivity.class));
+            return true;
+        } else if (id == R.id.purchase) {
+            startActivity(new Intent(context, org.acoustixaudio.axvoicerecorder.Purchase.class));
             return true;
         }
 
@@ -727,7 +816,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static void applySettings () {
-        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         String input = defaultSharedPreferences.getString("input", "-1");
         String output = defaultSharedPreferences.getString("output", "-1");
         Log.d(TAG, "applyPreferences: [devices] " + String.format("input: %s, output: %s", input, output));
@@ -748,4 +836,32 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "applySettings: ", e);
         }
     }
+
+    private void handlePurchase(com.android.billingclient.api.Purchase purchase) {
+        if (purchase.getPurchaseState() == com.android.billingclient.api.Purchase.PurchaseState.PURCHASED) {
+            if (!purchase.isAcknowledged()) {
+                AcknowledgePurchaseParams acknowledgePurchaseParams =
+                        AcknowledgePurchaseParams.newBuilder()
+                                .setPurchaseToken(purchase.getPurchaseToken())
+                                .build();
+                billingClient.acknowledgePurchase(acknowledgePurchaseParams, acknowledgePurchaseResponseListener);
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setMessage("Thank you for supporting the app!")
+                        .setTitle("Purchase Successful")
+                        .setIcon(R.drawable.vocal)
+                        .setPositiveButton("You're Welcome!", null);
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            } else {
+                Log.d(TAG, "handlePurchase: purchase already acknowledged. Turning on pro features");
+                proVersion = true;
+            }
+        } else {
+            Log.d(TAG, "handlePurchase: not purchased (" + purchase.getPurchaseState() + ')');
+        }
+
+    }
+
+
 }
