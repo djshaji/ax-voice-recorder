@@ -8,6 +8,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -20,6 +21,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.snackbar.Snackbar;
 import com.shajikhan.ladspa.amprack.AudioEngine;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -35,6 +37,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -85,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> presetsForAdapter ;
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+    LinearLayout lastRecordedBox;
     public static Context context;
     public static MainActivity mainActivity;
     TextView lastFilename;
@@ -209,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
         
-        LinearLayout lastRecordedBox = findViewById(R.id.last_recorded_box);
+        lastRecordedBox = findViewById(R.id.last_recorded_box);
 
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -226,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
                     basename = formatter.format(date);
                     filename = new StringJoiner("/").add (dir).add (basename).toString();
                     AudioEngine.setFileName(filename);
+                    applySettings();
                     Log.d(TAG, String.format ("[filename]: %s", filename));
 
                     startEffect();
@@ -424,6 +429,8 @@ public class MainActivity extends AppCompatActivity {
 
         AudioEngine.setMainActivityClassName("org/acoustixaudio/axvoicerecorder/MainActivity");
         loadPlugins();
+
+        applySettings();
     }
 
     @Override
@@ -442,6 +449,7 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            startActivity(new Intent(context, SettingsActivity.class));
             return true;
         }
 
@@ -723,6 +731,7 @@ public class MainActivity extends AppCompatActivity {
         title.setText("Enter filename");
         textView.setText(oldName);
 
+
         builder.setView(linearLayout)
                 .setPositiveButton("Save", new DialogInterface.OnClickListener() {
                     @Override
@@ -736,9 +745,53 @@ public class MainActivity extends AppCompatActivity {
                         mainActivity.lastFilename.setText(filename);
                     }
                 })
-                .setNegativeButton("Cancel", null);
+                .setNegativeButton("Cancel", null)
+                .setNeutralButton("Delete", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        AlertDialog.Builder b = new AlertDialog.Builder(context);
+                        b.setMessage("you want to delete this recording?")
+                                .setTitle("Are you sure")
+                                .setIcon(R.drawable.baseline_delete_forever_24)
+                                .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        File f = new File (filename + ".mp3");
+                                        if (f.delete()) {
+                                            Toast.makeText(MainActivity.this, "Recording deleted", Toast.LENGTH_SHORT).show();
+                                            lastRecordedBox.setVisibility(View.GONE);
+                                        } else {
+                                            Toast.makeText(MainActivity.this, "Cannot delete file", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                }).setNegativeButton("Cancel", null);
+                        b.show();
+                    }
+                });
 
         builder.show();
     }
 
+    public static void applySettings () {
+        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        String input = defaultSharedPreferences.getString("input", "-1");
+        String output = defaultSharedPreferences.getString("output", "-1");
+        Log.d(TAG, "applyPreferences: [devices] " + String.format("input: %s, output: %s", input, output));
+
+        Log.d(TAG, "applyPreferencesDevices: " + String.format(
+                "[preferences] playback device: %s, recording device: %s",
+                output, input
+        ));
+
+        try {
+            if (!input.equals("default") && ! input.equals("-1"))
+                AudioEngine.setRecordingDeviceId(new Integer(input));
+            if (!output.equals("default") && ! input.equals("-1"))
+                AudioEngine.setPlaybackDeviceId(new Integer(output));
+
+            AudioEngine.setLamePreset(Integer.parseInt(defaultSharedPreferences.getString("lame_preset", "1001")));
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "applySettings: ", e);
+        }
+    }
 }

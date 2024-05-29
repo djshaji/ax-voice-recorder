@@ -478,4 +478,30 @@
         <item>libconvoLV2.so</item>
         <item>rt-neural-generic.so</item>
     </string-array>
+    <!-- Reply Preference -->
+    <string-array name="reply_entries">
+        <item>Reply</item>
+        <item>Reply to all</item>
+    </string-array>
+
+    <string-array name="reply_values">
+        <item>reply</item>
+        <item>reply_all</item>
+    </string-array>
+    <string-array name="mp3_presets">
+        <item>medium</item>
+        <item>standard</item>
+        <item>extreme</item>
+        <item>insane</item>
+        <item>are you nuts</item>
+        <item>seriously dont select this one</item>
+    </string-array>
+    <string-array name="mp3_presets_values">
+        <item>1006</item>
+        <item>1001</item>
+        <item>1002</item>
+        <item>1003</item>
+        <item>1003</item>
+        <item>1003</item>
+    </string-array>
 </resources>
