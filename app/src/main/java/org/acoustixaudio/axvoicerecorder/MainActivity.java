@@ -17,6 +17,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.Player;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.snackbar.Snackbar;
 import com.shajikhan.ladspa.amprack.AudioEngine;
@@ -82,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivity";
     private static final int AUDIO_EFFECT_REQUEST = 0;
     boolean running = false;
-    MediaPlayer mediaPlayer = null;
+    ExoPlayer mediaPlayer = null;
     String dir, filename, basename ;
     JSONObject allPlugins;
     ArrayList<String> presetsForAdapter ;
@@ -113,9 +116,7 @@ public class MainActivity extends AppCompatActivity {
         mainActivity = this;
         context = this;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            mediaPlayer = new MediaPlayer(this);
-        }
+        mediaPlayer = new ExoPlayer.Builder(context).build();
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -167,52 +168,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    if (filename != null && ! mediaPlayer.isPlaying()) {
-                        if (mediaPlayer != null)
-                            mediaPlayer.start();
-                        buttonView.setBackground(getResources().getDrawable(R.drawable.baseline_pause_24));
-                    }
+                    mediaPlayer.play();
+                    buttonView.setBackground(getResources().getDrawable(R.drawable.baseline_pause_24));
                 } else {
-                    if (mediaPlayer != null)
-                        mediaPlayer.pause();
+                    mediaPlayer.pause();
                     buttonView.setBackground(getResources().getDrawable(R.drawable.baseline_play_arrow_24));
                 }
             }
         });
 
-        MediaPlayer.OnCompletionListener completionListener = new MediaPlayer.OnCompletionListener() {
+        mediaPlayer.addListener(new Player.Listener() {
             @Override
-            public void onCompletion(MediaPlayer mp) {
-                Log.i(TAG, "onCompletion: ");
-                lastPlayPause.setChecked(false);
-                    /*
-                    try {
-                        mediaPlayer.setDataSource(filename + ".mp3");
-                        mediaPlayer.prepare();
-                    } catch (IOException e) {
-                        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "onCheckedChanged: ", e);
-                        return;
-                    }
-
-                     */
+            public void onIsPlayingChanged(boolean isPlaying) {
+                Player.Listener.super.onIsPlayingChanged(isPlaying);
+                if (! isPlaying)
+                    lastPlayPause.setChecked(false);
             }
-        } ;
+        });
 
-        MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                Log.d(TAG, String.format("media player: prepared"));
-                prepared = true;
-            }
-        } ;
-
-        if (mediaPlayer != null) {
-            mediaPlayer.setOnCompletionListener(completionListener);
-            mediaPlayer.setOnPreparedListener(onPreparedListener);
-
-        }
-        
         lastRecordedBox = findViewById(R.id.last_recorded_box);
 
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -220,9 +193,7 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
-                    if (mediaPlayer != null && mediaPlayer.isPlaying())
-                        lastPlayPause.setChecked(false);
-
+                    lastPlayPause.setChecked(false);
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.stop1));
 
                     SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy_HH.mm.ss");
@@ -243,25 +214,9 @@ public class MainActivity extends AppCompatActivity {
                     lastFilename.setText(new File (filename).getName());
                     lastRecordedBox.setVisibility(View.VISIBLE);
 
-                    if (mediaPlayer != null && prepared) {
-                        if (mediaPlayer.isPlaying())
-                            mediaPlayer.stop();
-                        mediaPlayer.release();
-                        prepared = false;
-                    }
-
-                    if (mediaPlayer != null) {
-                        mediaPlayer = new MediaPlayer(context);
-                        mediaPlayer.setOnCompletionListener(completionListener);
-                        mediaPlayer.setOnPreparedListener(onPreparedListener);
-                        try {
-                            mediaPlayer.setDataSource(filename + ".mp3");
-                            mediaPlayer.prepare();
-                        } catch (IOException e) {
-                            Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "onCheckedChanged: ", e);
-                        }
-                    }
+                    MediaItem mediaItem = MediaItem.fromUri(filename);
+                    Log.d(TAG, "onClick: playing " + filename);
+                    mediaPlayer.setMediaItem(mediaItem);
                 }
             }
         });
@@ -718,8 +673,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        if (mediaPlayer != null)
-            mediaPlayer.stop();
+        mediaPlayer.stop();
     }
 
     public void renameFile (String oldName, int position) {
