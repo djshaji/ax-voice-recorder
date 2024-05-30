@@ -328,7 +328,7 @@
     }
   },
   "3500": {
-    "name": "Volume Normalizer",
+    "name": "Normalizer",
     "controls": {
       "0": {
         "name": "Target Amplitude",

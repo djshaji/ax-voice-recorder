@@ -26,6 +26,7 @@ import com.android.billingclient.api.PurchasesResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.snackbar.Snackbar;
@@ -101,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
     LinearLayout lastRecordedBox;
-    boolean proVersion = false ;
+    public static boolean proVersion = false ;
     public static Context context;
     public static MainActivity mainActivity;
     TextView lastFilename;
@@ -254,9 +255,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
+                    Log.i(TAG, "onCheckedChanged: playing " + filename);
                     mediaPlayer.play();
                     buttonView.setBackground(getResources().getDrawable(R.drawable.baseline_pause_24));
                 } else {
+                    Log.i(TAG, "onCheckedChanged: pause");
                     mediaPlayer.pause();
                     buttonView.setBackground(getResources().getDrawable(R.drawable.baseline_play_arrow_24));
                 }
@@ -266,9 +269,26 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer.addListener(new Player.Listener() {
             @Override
             public void onIsPlayingChanged(boolean isPlaying) {
+                Log.i(TAG, "onIsPlayingChanged: " + isPlaying);
                 Player.Listener.super.onIsPlayingChanged(isPlaying);
                 if (! isPlaying)
                     lastPlayPause.setChecked(false);
+            }
+        });
+
+        mediaPlayer.addListener(new Player.Listener() {
+            @Override
+            public void onPlayerError(PlaybackException error) {
+                Player.Listener.super.onPlayerError(error);
+                Log.e(TAG, "onPlayerError: ", error);
+            }
+        });
+
+        mediaPlayer.addListener(new Player.Listener() {
+            @Override
+            public void onPlayerErrorChanged(@Nullable PlaybackException error) {
+                Player.Listener.super.onPlayerErrorChanged(error);
+                Log.e(TAG, "onPlayerErrorChanged: ", error);
             }
         });
 
@@ -280,7 +300,7 @@ public class MainActivity extends AppCompatActivity {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     lastPlayPause.setChecked(false);
-                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.stop1));
+                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.stop1),null,null);
 
                     SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy_HH.mm.ss");
                     Date date = new Date();
@@ -294,15 +314,17 @@ public class MainActivity extends AppCompatActivity {
                     AudioEngine.toggleRecording(true);
                     lastRecordedBox.setVisibility(View.GONE);
                 } else {
-                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.record));
+                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.record),null,null);
                     stopEffect();
 
                     lastFilename.setText(new File (filename).getName());
                     lastRecordedBox.setVisibility(View.VISIBLE);
 
-                    MediaItem mediaItem = MediaItem.fromUri(filename);
-                    Log.d(TAG, "onClick: playing " + filename);
+                    MediaItem mediaItem = MediaItem.fromUri(filename + ".mp3");
                     mediaPlayer.setMediaItem(mediaItem);
+                    mediaPlayer.prepare();
+
+                    Log.i(TAG, "onCheckedChanged: set media item " + filename);
                 }
             }
         });

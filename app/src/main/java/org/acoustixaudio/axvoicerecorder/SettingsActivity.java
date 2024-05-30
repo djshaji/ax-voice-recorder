@@ -171,6 +171,15 @@ public class SettingsActivity extends AppCompatActivity {
                     return false;
                 }
             });
+
+            Preference buy = findPreference("purchase");
+            buy.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(@NonNull Preference preference) {
+                    startActivity(new Intent(settingsActivity, Purchase.class));
+                    return false;
+                }
+            });
         }
     }
 

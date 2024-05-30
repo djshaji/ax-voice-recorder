@@ -22,6 +22,8 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/gruppo"
                 android:visibility="visible"
+                android:textSize="20dp"
+                android:id="@+id/header_app_name"
                 android:text="AX Voice Recorder"/>
             <Space
                 android:layout_width="wrap_content"
@@ -34,6 +36,7 @@
                 android:background="@drawable/baseline_library_music_24"
                 android:id="@+id/recordings"/>
             <Button
+                android:visibility="gone"
                 android:layout_gravity="end"
                 android:layout_width="30dp"
                 android:layout_height="30dp"

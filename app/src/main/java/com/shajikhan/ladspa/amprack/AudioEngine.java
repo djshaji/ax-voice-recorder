@@ -123,4 +123,5 @@ public class AudioEngine {
     public static native void setMainActivityClassName (String className);
     public static native void pushToLockFreeBeforeOutputVolumeAaaaaargh (boolean setting) ;
     public static native void setLamePreset (int preset);
+    public static native int getActiveEnabledPlugins ();
 }

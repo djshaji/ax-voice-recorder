@@ -1,6 +1,7 @@
 package org.acoustixaudio.axvoicerecorder;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -98,6 +99,17 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
         holder.switchMaterial.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked && ! mainActivity.proVersion && AudioEngine.getActiveEnabledPlugins() > 1) {
+                    mainActivity.startActivity(new Intent(mainActivity,Purchase.class));
+
+                    for (ViewHolder h:
+                         holders) {
+                        h.switchMaterial.setChecked(false);
+                    }
+
+                    return;
+                }
+
                 AudioEngine.togglePlugin(holder.getAdapterPosition(), isChecked);
             }
         });
