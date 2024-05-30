@@ -79,6 +79,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
         });
         holder.switchMaterial.setUseMaterialThemeColors(true);
         holder.showControls.setChecked(false);
+        holder.switchMaterial.setChecked(AudioEngine.getActivePluginEnabled(position));
         holder.buttonBox.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -169,7 +170,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                 holder.sliders.add(slider);
 
                 try {
-                    slider.setValue((float) def);
+                    slider.setValue(AudioEngine.getActivePluginValue(position, index.get(0)));
                     slider.setValueTo((float) max);
                     slider.setValueFrom((float) min);
                 } catch (IllegalStateException e) {
@@ -235,6 +236,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
         JSONObject jsonObject = new JSONObject();
         try {
             for (int i = 0 ; i < holders.size() ; i ++) {
+                Log.d(TAG, String.format ("[%d]: {%s]", i, holders.get(i).pluginName.getText()));
                 JSONObject object = new JSONObject();
                 ViewHolder viewHolder = holders.get(i);
 
@@ -267,26 +269,26 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
     }
 
     void loadPreset (JSONObject jsonObject) {
-//        Log.i(TAG, "loadPreset: loading preset " + jsonObject +
-//                "for plugins " + holders.size());
-        Iterator<String> keys = jsonObject.keys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-//            Log.d(TAG, String.format ("plugin: %s", key));
+        for (int key = 0 ; key < jsonObject.length() ; key ++) {
             try {
-                JSONObject object = jsonObject.getJSONObject(key);
+                JSONObject object = jsonObject.getJSONObject(String.valueOf(key));
                 Iterator<String> controls = object.keys();
 
+                Log.d(TAG, "loadPreset: " + object);
                 while (controls.hasNext()) {
                     String control = controls.next();
+                    if (object.get(control) instanceof JSONArray) {
+                        Log.d(TAG, "loadPreset: " + object.getJSONArray(control));
+                    }
 
                     if (Objects.equals(control, "-1")) {
                         boolean enabled = object.getBoolean("-1");
-                        holders.get(Integer.parseInt(key)).switchMaterial.setChecked(enabled);
+                        holders.get(key).switchMaterial.setChecked(enabled);
                     } else {
                         double value = object.getDouble(String.valueOf(control));
 //                        Log.d(TAG, String.format ("[control]: %s [%f]", control, value));
-                        holders.get(Integer.parseInt(key)).sliders.get(Integer.parseInt(control)).setValue((float) value);
+                        Log.d(TAG, String.format ("[%s / %d]: [%s / %d]", key, holders.size(), control, holders.get(key).sliders.size()));
+                        holders.get(key).sliders.get(Integer.parseInt(control)).setValue((float) value);
                     }
                 }
             } catch (JSONException e) {
@@ -306,5 +308,10 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
             Log.e(TAG, "getFactoryPresets: ", e);
             return null ;
         }
+    }
+
+    public void clear () {
+        plugins.clear();
+        notifyDataSetChanged();
     }
 }

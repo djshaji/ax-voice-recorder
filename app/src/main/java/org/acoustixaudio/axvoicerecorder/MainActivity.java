@@ -55,6 +55,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.acoustixaudio.axvoicerecorder.databinding.ActivityMainBinding;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -284,6 +285,7 @@ public class MainActivity extends AppCompatActivity {
             public void onPlayerError(PlaybackException error) {
                 Player.Listener.super.onPlayerError(error);
                 Log.e(TAG, "onPlayerError: ", error);
+                Toast.makeText(MainActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -291,11 +293,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPlayerErrorChanged(@Nullable PlaybackException error) {
                 Player.Listener.super.onPlayerErrorChanged(error);
+                if (error != null)
+                    Toast.makeText(MainActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "onPlayerErrorChanged: ", error);
             }
         });
 
         lastRecordedBox = findViewById(R.id.last_recorded_box);
+        ToggleButton preview = findViewById(R.id.preview);
 
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -313,12 +318,16 @@ public class MainActivity extends AppCompatActivity {
                     applySettings();
                     Log.d(TAG, String.format ("[filename]: %s", filename));
 
-                    startEffect();
+                    if (! running)
+                        startEffect();
+
                     AudioEngine.toggleRecording(true);
                     lastRecordedBox.setVisibility(View.GONE);
                 } else {
                     buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.record),null,null);
-                    stopEffect();
+
+                    if (! preview.isChecked ())
+                        stopEffect();
 
                     lastFilename.setText(new File (filename).getName());
                     lastRecordedBox.setVisibility(View.VISIBLE);
@@ -356,7 +365,7 @@ public class MainActivity extends AppCompatActivity {
                 builder.show();
             }
         });
-        ToggleButton preview = findViewById(R.id.preview);
+
         preview.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -364,9 +373,17 @@ public class MainActivity extends AppCompatActivity {
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.mute));
                     AudioEngine.setOutputVolume(1f);
+                    if (! running)
+                        startEffect();
+                    else
+                        Log.i(TAG, "onCheckedChanged: effect already running");
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.preview));
                     AudioEngine.setOutputVolume(0f);
+
+                    if (! record.isChecked()) {
+                        stopEffect();
+                    }
                 }
             }
         });
@@ -498,6 +515,7 @@ public class MainActivity extends AppCompatActivity {
         loadPlugins();
         applySettings();
 
+        proVersion = true;
         if (proVersion) {
             ((TextView) findViewById(R.id.header_app_name)).setText("Premium");
         }
@@ -554,7 +572,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "Playing, attempting to stop, state: " + running);
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        running = AudioEngine.setEffectOn(false);
+        running = ! AudioEngine.setEffectOn(false);
     }
 
     private boolean isRecordPermissionGranted() {
@@ -676,7 +694,7 @@ public class MainActivity extends AppCompatActivity {
                     String name = object.getString("name");
                     addPluginToRack (Integer.parseInt(key));
 
-                    AudioEngine.togglePlugin(index, false);
+//                    AudioEngine.togglePlugin(index, false);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -699,7 +717,7 @@ public class MainActivity extends AppCompatActivity {
                        if (filename.equals("") || filename == null)
                            return;
 
-                       String preset = dataAdapter.getPreset();
+                       String preset = getPreset();
                        String fullFilename = new StringJoiner ("/").add(presetsDir).add(filename).toString();
                        Log.d(TAG, String.format ("write preset: %s", fullFilename));
                        File file = new File(dir, String.valueOf(fullFilename));
@@ -896,5 +914,94 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public static String getPreset1 () {
+        JSONObject jsonObject = loadJSONFromAssetFile(context, "voice.json");
+        Iterator<String> keys = jsonObject.keys();
 
+        JSONObject preset = new JSONObject();
+        int counter = 0 ;
+
+        try {
+            while (keys.hasNext()) {
+                String key = keys.next();
+                JSONObject plugin = jsonObject.getJSONObject(key);
+                Log.d(TAG, String.format ("[plugin]: %s", plugin));
+                JSONObject controls = plugin.getJSONObject("controls");
+
+                JSONObject pluginControls = new JSONObject();
+                Iterator <String> control = controls.keys();
+
+                int cnt = 0 ;
+                while (control.hasNext()) {
+                    String c = control.next();
+                    JSONObject cont = controls.getJSONObject(c);
+                    Log.i(TAG, "getPreset: " + cont);
+
+                    if (cont.get("index") instanceof Integer)
+                        pluginControls.put(String.valueOf(cnt++), AudioEngine.getActivePluginValueByIndex(counter, cont.getInt("index")));
+                    else {
+                        JSONArray jsonArray = cont.getJSONArray("index");
+                        for (int index = 0 ; index < jsonArray.length(); index ++) {
+                            pluginControls.put(String.valueOf(cnt++), AudioEngine.getActivePluginValueByIndex(counter, index));
+                        }
+                    }
+                }
+
+                preset.put(String.valueOf(counter), pluginControls);
+                counter ++ ;
+            }
+        } catch (JSONException jsonException) {
+            Log.e(TAG, "getPreset: ", jsonException);
+            Toast.makeText(context, jsonException.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
+        Log.d(TAG, String.format ("[preset]: %s", preset.toString()));
+        return preset.toString();
+    }
+
+    public static String getPreset () {
+        int plugins = AudioEngine.getActivePlugins();
+        JSONObject preset = new JSONObject();
+
+        try {
+            for (int i = 0; i < plugins; i++) {
+                JSONObject plugin = new JSONObject();
+                plugin.put("active", AudioEngine.getActivePluginEnabled(i));
+                float [] values = AudioEngine.getActivePluginValues(i);
+                plugin.put("controls", values);
+                plugin.put("name", AudioEngine.getActivePluginName(i));
+                preset.put(String.valueOf(i), plugin);
+            }
+        } catch (JSONException e) {
+            Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "getPreset: ", e);
+            return null;
+        }
+
+        return preset.toString();
+    }
+
+    public void loadPreset (String preset_) {
+        try {
+            JSONObject jsonObject = new JSONObject(preset_);
+            for (int key = 0 ; key < jsonObject.length() ; key ++) {
+                JSONObject object = jsonObject.getJSONObject(String.valueOf(key));
+                JSONObject con = object.getJSONObject("controls");
+                Iterator<String> controls = con.keys();
+
+                AudioEngine.togglePlugin(key, object.getBoolean("active"));
+                while (controls.hasNext()) {
+                    String control = controls.next();
+                    AudioEngine.setPluginControl(key, Integer.parseInt(control), con.getInt(control));
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "loadPreset: ", e);
+            return;
+        }
+
+        dataAdapter.clear();
+        loadPlugins();
+    }
 }
+
