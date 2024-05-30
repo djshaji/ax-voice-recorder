@@ -173,6 +173,13 @@ public class SettingsActivity extends AppCompatActivity {
             });
 
             Preference buy = findPreference("purchase");
+            Preference about = findPreference("about");
+
+            if (MainActivity.proVersion) {
+                buy.setVisible(false);
+                about.setTitle(about.getTitle() + " Premium");
+            }
+
             buy.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(@NonNull Preference preference) {

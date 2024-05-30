@@ -22,7 +22,8 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/gruppo"
                 android:visibility="visible"
-                android:textSize="20dp"
+                android:textSize="24dp"
+                android:textStyle="bold"
                 android:id="@+id/header_app_name"
                 android:text="AX Voice Recorder"/>
             <Space

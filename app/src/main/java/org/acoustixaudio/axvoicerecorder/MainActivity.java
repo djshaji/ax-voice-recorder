@@ -43,6 +43,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 import androidx.navigation.NavController;
@@ -133,9 +134,11 @@ public class MainActivity extends AppCompatActivity {
         mainActivity = this;
         context = this;
 
+
         mediaPlayer = new ExoPlayer.Builder(context).build();
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+//        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
 
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
@@ -491,15 +494,23 @@ public class MainActivity extends AppCompatActivity {
         sharedLibrariesLV2 = context.getResources().getStringArray(R.array.lv2_plugins);
 
         AudioEngine.setMainActivityClassName("org/acoustixaudio/axvoicerecorder/MainActivity");
-        loadPlugins();
 
+        loadPlugins();
         applySettings();
+
+        if (proVersion) {
+            ((TextView) findViewById(R.id.header_app_name)).setText("Premium");
+        }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        if (proVersion) {
+            menu.findItem(R.id.purchase).setVisible(false);
+        }
+
         return true;
     }
 
