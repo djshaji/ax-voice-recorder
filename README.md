@@ -21,6 +21,8 @@
   Use the normalizer to boost the audio signal, for example to create ASMR
 
 ## Key Features
+- **Live Preview**: Listen to your voice while recording, or play back live audio without recording. You can use this feature to hear what is being recorded in real time, or hear live feedback from the microphone without recording to create presets. **Note: Using the Live Preview feature directly on the device without connecting headphones will cause a feedback sound** - much like the feedback on a public address system. Use of headphones - Bluetooth or wired - is recommended. The app will switch audio automatically to connected audio devices. You can also change the audio devices in app settings.
+- **USB OTG Audio Device support**: Use USB audio interfaces or external soundcards to record audio.
 - Floating point precision for high quality audio processing
 - Ultra Low latency for lag free recording experience
 - Low memory footprint provides great performance on even low end devices
