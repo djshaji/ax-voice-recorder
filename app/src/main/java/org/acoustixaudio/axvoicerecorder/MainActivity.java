@@ -105,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     LinearLayout lastRecordedBox;
     public static boolean proVersion = false ;
+    ArrayList <Integer> pluginIDs = new ArrayList<>();
     public static Context context;
     public static MainActivity mainActivity;
     TextView lastFilename;
@@ -416,7 +417,9 @@ public class MainActivity extends AppCompatActivity {
         test.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, String.format ("[get preset]: %s", dataAdapter.getPreset()));
+//                Log.d(TAG, String.format ("[get preset]: %s", getPreset()));
+//                loadPreset(getPreset());
+                AudioEngine.printActiveChain();
             }
         });
 
@@ -476,7 +479,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, String.format("%d: %s", selection, preset));
                     recyclerView.scrollToPosition(8);
                     if (preset != null)
-                        dataAdapter.loadPreset(preset);
+                        loadPreset(preset);
                     recyclerView.scrollToPosition(0);
                 } else {
                     try {
@@ -682,6 +685,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void loadPlugins () {
+        pluginIDs.clear();
         allPlugins = loadJSONFromAssetFile(context, "voice.json");
         Iterator<String> keys = allPlugins.keys();
 
@@ -693,6 +697,7 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject object = allPlugins.getJSONObject(key);
                     String name = object.getString("name");
                     addPluginToRack (Integer.parseInt(key));
+                    pluginIDs.add(Integer.parseInt(key));
 
 //                    AudioEngine.togglePlugin(index, false);
                 }
@@ -968,7 +973,9 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject plugin = new JSONObject();
                 plugin.put("active", AudioEngine.getActivePluginEnabled(i));
                 float [] values = AudioEngine.getActivePluginValues(i);
-                plugin.put("controls", values);
+                JSONArray arrayList = new JSONArray(values);
+
+                plugin.put("controls", arrayList);
                 plugin.put("name", AudioEngine.getActivePluginName(i));
                 preset.put(String.valueOf(i), plugin);
             }
@@ -978,30 +985,35 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
 
+        Log.d(TAG, "getPreset: generated: " + preset);
         return preset.toString();
     }
 
-    public void loadPreset (String preset_) {
+    public void loadPreset (JSONObject jsonObject) {
+        dataAdapter.clear();
+//        Log.d(TAG, "loadPreset: default: " + getPreset());
+        Log.d(TAG, String.format ("[loading plugins from preset (%d)]: %s", jsonObject.length(), jsonObject));
         try {
-            JSONObject jsonObject = new JSONObject(preset_);
             for (int key = 0 ; key < jsonObject.length() ; key ++) {
                 JSONObject object = jsonObject.getJSONObject(String.valueOf(key));
-                JSONObject con = object.getJSONObject("controls");
-                Iterator<String> controls = con.keys();
+                JSONArray con = object.getJSONArray("controls");
 
+                Log.d(TAG, String.format ("[%d: %s]: %s", key, object.getString("name"), con));
                 AudioEngine.togglePlugin(key, object.getBoolean("active"));
-                while (controls.hasNext()) {
-                    String control = controls.next();
-                    AudioEngine.setPluginControl(key, Integer.parseInt(control), con.getInt(control));
+                for (int a = 0 ; a < con.length() ; a++) {
+                    AudioEngine.setPluginControl(key, a, (float) con.getDouble(a));
+                    Log.i(TAG, "loadPreset: " + String.format ("%d %d: %f", key, a, con.getDouble(a)));
                 }
+
+                Log.d(TAG, String.format ("[addItem] %d: %d", pluginIDs.get(key), key));
+                dataAdapter.addItem(pluginIDs.get(key), key);
             }
         } catch (JSONException e) {
             Log.e(TAG, "loadPreset: ", e);
             return;
         }
 
-        dataAdapter.clear();
-        loadPlugins();
+//        loadPlugins();
     }
 }
 

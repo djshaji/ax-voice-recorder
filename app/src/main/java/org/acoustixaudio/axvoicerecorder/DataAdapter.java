@@ -128,6 +128,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
 
         try {
              name = data.getString("name");
+             Log.d(TAG, String.format ("----------------| %s | ------------------- ", name));
              holder.pluginName.setText(name);
              JSONObject _controls = data.getJSONObject("controls");
              Iterator<String> keys = _controls.keys();
@@ -140,6 +141,9 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                 double min = controls.getDouble("minimum");
                 double max = controls.getDouble("maximum");
                 String cname = controls.getString("name");
+                Log.d(TAG, String.format ("[control]: %s [%f %f %f]",
+                        cname,
+                        def, min, max));
                 if (max < min) {
                     double t = max ;
                     max = min ;
@@ -157,6 +161,8 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                     }
                 }
 
+                Log.d(TAG, String.format ("[control index]: %s", index));
+
                 TextView textView = new TextView(mainActivity);
                 textView.setText(cname);
 //                Log.d(TAG, String.format ("[%s]: [%s]", name,cname));
@@ -170,7 +176,10 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                 holder.sliders.add(slider);
 
                 try {
-                    slider.setValue(AudioEngine.getActivePluginValue(position, index.get(0)));
+                    float value = AudioEngine.getActivePluginValueByIndex(position, index.get(0)) ;
+                    Log.i(TAG, "onBindViewHolder: " +
+                            String.format ("value %d:%d %f", position, index.get(0), value));
+                    slider.setValue(value);
                     slider.setValueTo((float) max);
                     slider.setValueFrom((float) min);
                 } catch (IllegalStateException e) {
@@ -178,11 +187,15 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                 }
 
                 linearLayout.addView(slider);
-                slider.setOnClickListener(new View.OnClickListener() {
+                Log.i(TAG, "onBindViewHolder: slider set on click listener");
+                slider.addOnChangeListener(new Slider.OnChangeListener() {
                     @Override
-                    public void onClick(View v) {
+                    public void onValueChange(@NonNull Slider slider, float v, boolean b) {
+                        if (! b)
+                            return;
+
                         for (int control = 0; control < index.size(); control++)
-                            AudioEngine.setPluginControl(holder.getAdapterPosition(), index.get(control), slider.getValue());
+                            AudioEngine.setPluginControlByIndex(holder.getAdapterPosition(), index.get(control), v);
                     }
                 });
             }
@@ -260,7 +273,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
         JSONObject jsonObject = null;
         try {
             jsonObject = new JSONObject(preset);
-            loadPreset(jsonObject);
+            mainActivity.loadPreset(jsonObject);
         } catch (JSONException e) {
             Log.e(TAG, "loadPreset: ", e);
             return;
@@ -274,7 +287,7 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
                 JSONObject object = jsonObject.getJSONObject(String.valueOf(key));
                 Iterator<String> controls = object.keys();
 
-                Log.d(TAG, "loadPreset: " + object);
+                Log.d(TAG, String.format("[%d] %s", key, object));
                 while (controls.hasNext()) {
                     String control = controls.next();
                     if (object.get(control) instanceof JSONArray) {
