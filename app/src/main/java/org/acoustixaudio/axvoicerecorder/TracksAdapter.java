@@ -189,8 +189,8 @@ public class TracksAdapter extends RecyclerView.Adapter<TracksAdapter.ViewHolder
                         if (filename.equals("") || filename == null || filename.equals(oldName))
                             return;
 
-                        File file = new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS).getAbsolutePath()).add (oldName).toString());
-                        file.renameTo(new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS).getAbsolutePath()).add (filename).toString()));
+                        File file = new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_MUSIC).getAbsolutePath()).add (oldName).toString());
+                        file.renameTo(new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_MUSIC).getAbsolutePath()).add (filename).toString()));
                         holders.get(position).fileButton.setText(filename);
                     }
                 })

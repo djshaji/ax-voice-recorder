@@ -1,6 +1,7 @@
 package org.acoustixaudio.axvoicerecorder;
 
 import static android.os.Environment.DIRECTORY_DOCUMENTS;
+import static android.os.Environment.DIRECTORY_MUSIC;
 import static android.os.Environment.DIRECTORY_RECORDINGS;
 import static android.os.Environment.getExternalStorageDirectory;
 
@@ -213,8 +214,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         AudioEngine.setExportFormat(2);
-        dir = getExternalFilesDir("Recordings").getPath();
-        File folder = getExternalFilesDir(DIRECTORY_RECORDINGS);
+        dir = getExternalFilesDir(DIRECTORY_MUSIC).getPath();
+        File folder = getExternalFilesDir(DIRECTORY_MUSIC);
         if (! folder.exists()) {
             if (!folder.mkdirs()) {
                 Toast.makeText(context, "Unable to create recording files directory", Toast.LENGTH_SHORT).show();
@@ -518,7 +519,6 @@ public class MainActivity extends AppCompatActivity {
         loadPlugins();
         applySettings();
 
-        proVersion = true;
         if (proVersion) {
             ((TextView) findViewById(R.id.header_app_name)).setText("Premium");
         }
@@ -839,8 +839,8 @@ public class MainActivity extends AppCompatActivity {
                         if (filename.equals("") || filename == null || filename.equals(oldName))
                             return;
 
-                        File file = new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS).getAbsolutePath()).add (oldName).toString() + ".mp3");
-                        file.renameTo(new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(Environment.DIRECTORY_RECORDINGS).getAbsolutePath()).add (filename).toString() + ".mp3"))  ;
+                        File file = new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(DIRECTORY_MUSIC).getAbsolutePath()).add (oldName).toString() + ".mp3");
+                        file.renameTo(new File(new StringJoiner("/").add (mainActivity.getExternalFilesDir(DIRECTORY_MUSIC).getAbsolutePath()).add (filename).toString() + ".mp3"))  ;
                         mainActivity.lastFilename.setText(filename);
                     }
                 })

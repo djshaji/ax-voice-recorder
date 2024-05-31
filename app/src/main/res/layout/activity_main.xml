@@ -37,7 +37,7 @@
                 android:background="@drawable/baseline_library_music_24"
                 android:id="@+id/recordings"/>
             <Button
-                android:visibility="visible"
+                android:visibility="gone"
                 android:layout_gravity="end"
                 android:layout_width="30dp"
                 android:layout_height="30dp"

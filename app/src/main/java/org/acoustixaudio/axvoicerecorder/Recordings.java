@@ -36,11 +36,11 @@ public class Recordings extends AppCompatActivity {
         tracks.tracksAdapter.mainActivity = this;
         tracks.onViewCreated(tracks.constraintLayout, null);
 //        populateRecordings();
-        tracks.load(Objects.requireNonNull(getExternalFilesDir(Environment.DIRECTORY_RECORDINGS)));
+        tracks.load(Objects.requireNonNull(getExternalFilesDir(Environment.DIRECTORY_MUSIC)));
     }
 
     void populateRecordings () {
-        for (File f: Objects.requireNonNull(getExternalFilesDirs("Recordings")[0].listFiles())) {
+        for (File f: Objects.requireNonNull(getExternalFilesDir(Environment.DIRECTORY_MUSIC).listFiles())) {
             tracks.tracksAdapter.add(f.getName());
         }
     }
