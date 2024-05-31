@@ -32,14 +32,13 @@
 See for yourself what the app actually does, or use this code to create something new!
 
 ## Screenshots
-
-![Screenshot_20240531-204938 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/76dd1f85-e11c-4d0d-99b5-b5c28479cb04)
-![Screenshot_20240531-204955 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/57776ab6-9adb-4f39-a6db-9718f5b3c4b8)
-![Screenshot_20240531-205500 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/8b1eda69-248e-4ca6-97f8-75a638b6319e)
-![Screenshot_20240531-205508 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/0ea4befe-5efd-43f1-a66d-8248e6d92b83)
-![Screenshot_20240531-205515 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/75c95062-b2d2-4907-ab9e-562566e51a36)
-![Screenshot_20240531-205519 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/24db57bd-f624-4b64-8bb5-484535e5645f)
-![Screenshot_20240531-205522 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/13f7305c-dfd6-482d-b9cd-73386fd26aad)
-![Screenshot_20240531-205528 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/d7187f6b-7c70-4195-9926-b41cc8224655)
+![Screenshot_20240531-204938 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/6c08c563-e4c7-4622-84a1-fae9df494fe4)
+![Screenshot_20240531-204955 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/888b374d-4dac-4614-bfe9-1aabd56fba67)
+![Screenshot_20240531-205500 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/9f47014a-42a4-4e58-8c28-281f79084cae)
+![Screenshot_20240531-205508 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/e58f15ce-e773-46da-8fd3-e0814ccbb7a4)
+![Screenshot_20240531-205515 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/5fc22e02-d917-4cb0-adfe-7d55b3e3a304)
+![Screenshot_20240531-205519 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/d46ea16d-ff4b-4f38-a66a-d63bb795fc07)
+![Screenshot_20240531-205522 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/1ab5ff69-dcda-4966-9dbc-555412fe74d5)
+![Screenshot_20240531-205528 png](https://github.com/djshaji/ax-voice-recorder/assets/17184025/cfa9b274-d9c9-47e4-a81c-699c46acfefe)
 
 Made with ❤️
