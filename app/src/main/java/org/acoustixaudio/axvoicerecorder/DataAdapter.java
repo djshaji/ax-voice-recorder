@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
@@ -97,23 +98,22 @@ public class DataAdapter extends RecyclerView.Adapter <DataAdapter.ViewHolder> {
             }
         });
 
+        holder.switchMaterial.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (holder.switchMaterial.isChecked() && ! mainActivity.proVersion && AudioEngine.getActiveEnabledPlugins() > 1) {
+                    mainActivity.startActivity(new Intent(mainActivity,Purchase.class));
+                }
+            }
+        });
+        
         holder.switchMaterial.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked && ! mainActivity.proVersion && AudioEngine.getActiveEnabledPlugins() > 1) {
-                    mainActivity.startActivity(new Intent(mainActivity,Purchase.class));
-
-                    for (ViewHolder h:
-                         holders) {
-                        h.switchMaterial.setChecked(false);
-                    }
-
-                    return;
-                }
-
                 AudioEngine.togglePlugin(holder.getAdapterPosition(), isChecked);
             }
         });
+
         int ID = plugins.get(position);
         JSONObject data = null;
         try {
