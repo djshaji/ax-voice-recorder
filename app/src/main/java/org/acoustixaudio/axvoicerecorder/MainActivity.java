@@ -156,78 +156,8 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "onCreate: purchased proVersion: " + proVersion);
 
-        if (!proVersion) {
-            acknowledgePurchaseResponseListener = new AcknowledgePurchaseResponseListener() {
-                @Override
-                public void onAcknowledgePurchaseResponse(@NonNull BillingResult billingResult) {
-                    Log.d(TAG, "onAcknowledgePurchaseResponse: " + billingResult.getDebugMessage());
-                }
-            };
-
-            purchasesResponseListener = new PurchasesResponseListener() {
-                @Override
-                public void onQueryPurchasesResponse(@NonNull BillingResult billingResult, @NonNull List<Purchase> list) {
-                    Log.d(TAG, "onQueryPurchasesResponse: " + billingResult.getDebugMessage());
-                    if (list.isEmpty()) {
-                        Log.d(TAG, "onQueryPurchasesResponse: no purchases");
-                        Log.d(TAG, "onQueryPurchasesResponse: not PRO version");
-
-                        defaultSharedPreferences.edit().putBoolean("pro", false).apply();
-                        return;
-                    }
-
-                    Purchase purchase = list.get(0);
-                    if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                        Log.d(TAG, "onQueryPurchasesResponse: purchased");
-                        proVersion = true;
-                        defaultSharedPreferences.edit().putBoolean("pro", true).apply();
-                    } else {
-                        Log.d(TAG, "onQueryPurchasesResponse: not PRO version");
-                        proVersion = false;
-                        defaultSharedPreferences.edit().putBoolean("pro", false).apply();
-                    }
-                }
-            };
-
-            purchasesUpdatedListener = new PurchasesUpdatedListener() {
-
-                @Override
-                public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<com.android.billingclient.api.Purchase> list) {
-                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK
-                            && list != null) {
-                        for (com.android.billingclient.api.Purchase purchase : list) {
-                            handlePurchase(purchase);
-                        }
-                    } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
-                        // Handle an error caused by a user cancelling the purchase flow.
-                        Log.d(TAG, "onPurchasesUpdated: user cancelled purchase");
-                    } else {
-                        // Handle any other error codes.
-                        Log.d(TAG, "onPurchasesUpdated: got purchase response " + billingResult.getDebugMessage());
-                    }
-
-                }
-            };
-
-            billingClient = BillingClient.newBuilder(context)
-                    .enablePendingPurchases()
-                    .setListener(purchasesUpdatedListener)
-                    .build();
-
-            billingClient.startConnection(new BillingClientStateListener() {
-                @Override
-                public void onBillingServiceDisconnected() {
-
-                }
-
-                @Override
-                public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
-                    Log.d(TAG, "onBillingSetupFinished: " + billingResult.getDebugMessage());
-                    billingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP, purchasesResponseListener);
-
-                }
-            });
-
+        if (! proVersion) {
+            checkPurchase();
         }
 
         AudioEngine.setExportFormat(2);
@@ -537,7 +467,7 @@ public class MainActivity extends AppCompatActivity {
         applySettings();
 
         if (BuildConfig.BUILD_TYPE.equals("debug")) {
-//            proVersion = true ;
+            proVersion = true ;
         }
 
         if (proVersion) {
@@ -1036,5 +966,79 @@ public class MainActivity extends AppCompatActivity {
 
 //        loadPlugins();
     }
+
+    public void checkPurchase () {
+        acknowledgePurchaseResponseListener = new AcknowledgePurchaseResponseListener() {
+            @Override
+            public void onAcknowledgePurchaseResponse(@NonNull BillingResult billingResult) {
+                Log.d(TAG, "onAcknowledgePurchaseResponse: " + billingResult.getDebugMessage());
+            }
+        };
+
+        purchasesResponseListener = new PurchasesResponseListener() {
+            @Override
+            public void onQueryPurchasesResponse(@NonNull BillingResult billingResult, @NonNull List<Purchase> list) {
+                Log.d(TAG, "onQueryPurchasesResponse: " + billingResult.getDebugMessage());
+                if (list.isEmpty()) {
+                    Log.d(TAG, "onQueryPurchasesResponse: no purchases");
+                    Log.d(TAG, "onQueryPurchasesResponse: not PRO version");
+
+                    defaultSharedPreferences.edit().putBoolean("pro", false).apply();
+                    return;
+                }
+
+                Purchase purchase = list.get(0);
+                if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                    Log.d(TAG, "onQueryPurchasesResponse: purchased");
+                    proVersion = true;
+                    defaultSharedPreferences.edit().putBoolean("pro", true).apply();
+                } else {
+                    Log.d(TAG, "onQueryPurchasesResponse: not PRO version");
+                    proVersion = false;
+                    defaultSharedPreferences.edit().putBoolean("pro", false).apply();
+                }
+            }
+        };
+
+        purchasesUpdatedListener = new PurchasesUpdatedListener() {
+
+            @Override
+            public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<com.android.billingclient.api.Purchase> list) {
+                if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK
+                        && list != null) {
+                    for (com.android.billingclient.api.Purchase purchase : list) {
+                        handlePurchase(purchase);
+                    }
+                } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
+                    // Handle an error caused by a user cancelling the purchase flow.
+                    Log.d(TAG, "onPurchasesUpdated: user cancelled purchase");
+                } else {
+                    // Handle any other error codes.
+                    Log.d(TAG, "onPurchasesUpdated: got purchase response " + billingResult.getDebugMessage());
+                }
+
+            }
+        };
+
+        billingClient = BillingClient.newBuilder(context)
+                .enablePendingPurchases()
+                .setListener(purchasesUpdatedListener)
+                .build();
+
+        billingClient.startConnection(new BillingClientStateListener() {
+            @Override
+            public void onBillingServiceDisconnected() {
+
+            }
+
+            @Override
+            public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
+                Log.d(TAG, "onBillingSetupFinished: " + billingResult.getDebugMessage());
+                billingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP, purchasesResponseListener);
+
+            }
+        });
+    }
+
 }
 
