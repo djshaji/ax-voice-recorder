@@ -22,6 +22,7 @@ import androidx.preference.PreferenceManager;
 import com.shajikhan.ladspa.amprack.AudioEngine;
 
 import java.util.ArrayList;
+import java.util.StringJoiner;
 
 public class SettingsActivity extends AppCompatActivity {
     AudioManager audioManager = null ;
@@ -174,6 +175,14 @@ public class SettingsActivity extends AppCompatActivity {
 
             Preference buy = findPreference("purchase");
             Preference about = findPreference("about");
+            about.setSummary(
+                    new StringJoiner(" ")
+                            .add("Version")
+                            .add (BuildConfig.VERSION_NAME)
+                            .add("Build")
+                            .add(String.valueOf(BuildConfig.VERSION_CODE))
+                            .toString()
+            );
 
             if (MainActivity.proVersion) {
                 buy.setVisible(false);
