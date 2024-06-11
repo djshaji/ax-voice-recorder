@@ -48,6 +48,7 @@ import android.view.View;
 
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -135,6 +136,11 @@ public class MainActivity extends AppCompatActivity {
     private PurchasesUpdatedListener purchasesUpdatedListener;
     private BillingClient billingClient;
     private long elapsed;
+    private ToggleButton record;
+    private Runnable r;
+    private Handler handler;
+    private ToggleButton pause;
+    private long ctime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -188,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, String.format ("[dir]: %s", dir));
-        ToggleButton record = findViewById(R.id.record);
+        record = findViewById(R.id.record);
         lastFilename = findViewById(R.id.last_filename);
         ToggleButton lastPlayPause = findViewById(R.id.last_play);
 
@@ -263,18 +269,19 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout timer = findViewById(R.id.timer);
         TextView clock = findViewById(R.id.clock);
 
-        android.os.Handler handler = new Handler();
-        Runnable r = new Runnable() {
+        handler = new Handler();
+        r = new Runnable() {
             @Override
             public void run() {
-                if (mainActivity.running) {
-                    Duration d = Duration.ofMillis(System.currentTimeMillis() - elapsed) ;
+                if (mainActivity.running && ! pause.isChecked()) {
+                    ctime = System.currentTimeMillis() ;
+                    Duration d = Duration.ofMillis(ctime - elapsed) ;
                     long minutes = d.getSeconds()/60 ;
                     long seconds = d.getSeconds() ;
                     if (minutes > 0)
                         seconds = seconds - minutes * 60;
 
-                    clock.setText(String.format("%d:%d", minutes, seconds));
+                    clock.setText(String.format("%02d:%02d", minutes, seconds));
                     handler.postDelayed(this, 1000);
                 }
             }
@@ -283,15 +290,16 @@ public class MainActivity extends AppCompatActivity {
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Log.d(TAG, "onCheckedChanged: " + isChecked);
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     lastPlayPause.setChecked(false);
+                    pause.setEnabled(true);
+
                     elapsed = System.currentTimeMillis();
                     timer.setVisibility(View.VISIBLE);
                     clock.setText("00:00");
                     handler.postDelayed(r, 1000);
-
-                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.stop1),null,null);
 
                     SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy_HH.mm.ss");
                     Date date = new Date();
@@ -306,9 +314,8 @@ public class MainActivity extends AppCompatActivity {
 
                     AudioEngine.toggleRecording(true);
                     lastRecordedBox.setVisibility(View.GONE);
+                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.stop1),null,null);
                 } else {
-                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.record_1),null,null);
-
                     if (! preview.isChecked ())
                         stopEffect();
 
@@ -320,6 +327,10 @@ public class MainActivity extends AppCompatActivity {
                     mediaPlayer.setMediaItem(mediaItem);
                     mediaPlayer.prepare();
 
+                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.record_1),null,null);
+                    pause.setEnabled(false);
+                    if (pause.isChecked())
+                        pause.setChecked(false);
                     Log.i(TAG, "onCheckedChanged: set media item " + filename);
                 }
             }
@@ -364,6 +375,8 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.baseline_volume_up_24));
                     AudioEngine.setOutputVolume(0f);
+                    if (! isRecordPermissionGranted())
+                        return;
 
                     if (! record.isChecked()) {
                         stopEffect();
@@ -372,19 +385,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ToggleButton pause = findViewById(R.id.pause);
+        pause = findViewById(R.id.pause);
+        pause.setEnabled(false);
         pause.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.baseline_play_circle_24));
-                    AudioEngine.bypass(true);
+                    AudioEngine.pause(true);
                     AudioEngine.setInputVolume(0f);
                 } else {
                     buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.baseline_pause_circle_outline_24));
-                    AudioEngine.bypass(false);
+                    AudioEngine.pause(false);
                     AudioEngine.setInputVolume(1f);
+                    if (running) {
+                        handler.postDelayed(r, 1000);
+                        elapsed = System.currentTimeMillis() + elapsed - ctime;
+                    }
                 }
 
             }
@@ -1075,5 +1093,16 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            startEffect();
+            handler.postDelayed(r, 1000);
+        } else {
+//            record.setChecked(false);
+        }
+    }
 }
 
