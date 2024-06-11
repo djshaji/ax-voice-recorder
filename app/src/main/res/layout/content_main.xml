@@ -13,9 +13,35 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/last_recorded_box"
+        android:visibility="gone"
+        android:background="@android:color/transparent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:id="@+id/timer">
+
+        <TextView
+            android:padding="5dp"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:fontFamily="@font/gruppo"
+            android:textSize="20dp"
+            android:background="@android:color/holo_red_dark"
+            android:textColor="@color/white"
+            android:id="@+id/clock"/>
+    </LinearLayout>
+    <LinearLayout
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_width="wrap_content"
+        android:padding="5dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
         android:visibility="gone"
         android:background="@drawable/semi_trans"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/timer"
         android:id="@+id/last_recorded_box">
         <ToggleButton
             android:layout_width="30dp"
@@ -66,7 +92,7 @@
                 android:id="@+id/preview"
                 android:textOff=""
                 android:background="@android:color/transparent"
-                android:drawableLeft="@drawable/preview"/>
+                android:drawableLeft="@drawable/baseline_volume_up_24"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
@@ -83,7 +109,7 @@
             android:layout_height="100dp"
             android:layout_gravity="center"
             android:textOff=""
-            android:drawableTop="@drawable/record"
+            android:drawableTop="@drawable/record_1"
             android:textOn=""
             android:background="@android:color/transparent"
             android:layout_weight="1"
@@ -103,7 +129,7 @@
                 android:textOn=""
                 android:id="@+id/pause"
                 android:background="@android:color/transparent"
-                android:drawableLeft="@drawable/pause"/>
+                android:drawableLeft="@drawable/baseline_pause_circle_outline_24"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"

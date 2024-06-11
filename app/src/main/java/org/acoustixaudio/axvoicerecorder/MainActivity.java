@@ -40,6 +40,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -84,6 +85,8 @@ import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -131,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
     private PurchasesResponseListener purchasesResponseListener;
     private PurchasesUpdatedListener purchasesUpdatedListener;
     private BillingClient billingClient;
+    private long elapsed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -200,8 +204,9 @@ public class MainActivity extends AppCompatActivity {
         lastShare.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.d(TAG, "onClick: sharing " + filename);
                 if (filename != null)
-                    shareFile(new File(filename));
+                    shareFile(new File(filename + ".mp3"));
             }
         });
         lastPlayPause.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -224,8 +229,12 @@ public class MainActivity extends AppCompatActivity {
             public void onIsPlayingChanged(boolean isPlaying) {
                 Log.i(TAG, "onIsPlayingChanged: " + isPlaying);
                 Player.Listener.super.onIsPlayingChanged(isPlaying);
-                if (! isPlaying)
+                if (! isPlaying) {
                     lastPlayPause.setChecked(false);
+                    MediaItem mediaItem = MediaItem.fromUri(filename + ".mp3");
+                    mediaPlayer.setMediaItem(mediaItem);
+                    mediaPlayer.prepare();
+                }
             }
         });
 
@@ -251,12 +260,37 @@ public class MainActivity extends AppCompatActivity {
         lastRecordedBox = findViewById(R.id.last_recorded_box);
         ToggleButton preview = findViewById(R.id.preview);
 
+        LinearLayout timer = findViewById(R.id.timer);
+        TextView clock = findViewById(R.id.clock);
+
+        android.os.Handler handler = new Handler();
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                if (mainActivity.running) {
+                    Duration d = Duration.ofMillis(System.currentTimeMillis() - elapsed) ;
+                    long minutes = d.getSeconds()/60 ;
+                    long seconds = d.getSeconds() ;
+                    if (minutes > 0)
+                        seconds = seconds - minutes * 60;
+
+                    clock.setText(String.format("%d:%d", minutes, seconds));
+                    handler.postDelayed(this, 1000);
+                }
+            }
+        };
+
         record.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
                     lastPlayPause.setChecked(false);
+                    elapsed = System.currentTimeMillis();
+                    timer.setVisibility(View.VISIBLE);
+                    clock.setText("00:00");
+                    handler.postDelayed(r, 1000);
+
                     buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.stop1),null,null);
 
                     SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy_HH.mm.ss");
@@ -273,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
                     AudioEngine.toggleRecording(true);
                     lastRecordedBox.setVisibility(View.GONE);
                 } else {
-                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.record),null,null);
+                    buttonView.setCompoundDrawablesWithIntrinsicBounds(null,getResources().getDrawable(R.drawable.record_1),null,null);
 
                     if (! preview.isChecked ())
                         stopEffect();
@@ -281,6 +315,7 @@ public class MainActivity extends AppCompatActivity {
                     lastFilename.setText(new File (filename).getName());
                     lastRecordedBox.setVisibility(View.VISIBLE);
 
+                    timer.setVisibility(View.GONE);
                     MediaItem mediaItem = MediaItem.fromUri(filename + ".mp3");
                     mediaPlayer.setMediaItem(mediaItem);
                     mediaPlayer.prepare();
@@ -320,14 +355,14 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
-                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.mute));
+                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.baseline_volume_off_24));
                     AudioEngine.setOutputVolume(1f);
                     if (! running)
                         startEffect();
                     else
                         Log.i(TAG, "onCheckedChanged: effect already running");
                 } else {
-                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.preview));
+                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.baseline_volume_up_24));
                     AudioEngine.setOutputVolume(0f);
 
                     if (! record.isChecked()) {
@@ -343,11 +378,11 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 buttonView.setCompoundDrawables(null, null, null, null);
                 if (isChecked) {
-                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.play));
+                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.baseline_play_circle_24));
                     AudioEngine.bypass(true);
                     AudioEngine.setInputVolume(0f);
                 } else {
-                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.pause));
+                    buttonView.setButtonDrawable(getResources().getDrawable(R.drawable.baseline_pause_circle_outline_24));
                     AudioEngine.bypass(false);
                     AudioEngine.setInputVolume(1f);
                 }
