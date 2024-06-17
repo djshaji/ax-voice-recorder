@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler;
     private ToggleButton pause;
     private long ctime;
+    private boolean showNagScreen = true ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -332,6 +333,11 @@ public class MainActivity extends AppCompatActivity {
                     if (pause.isChecked())
                         pause.setChecked(false);
                     Log.i(TAG, "onCheckedChanged: set media item " + filename);
+
+                    if (showNagScreen && ! proVersion) {
+                        startActivity(new Intent(mainActivity,org.acoustixaudio.axvoicerecorder.Purchase.class));
+                        showNagScreen = false ;
+                    }
                 }
             }
         });
@@ -520,7 +526,7 @@ public class MainActivity extends AppCompatActivity {
         applySettings();
 
         if (BuildConfig.BUILD_TYPE.equals("debug")) {
-            proVersion = true ;
+//            proVersion = true ;
         }
 
         if (proVersion) {
